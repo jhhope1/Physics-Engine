@@ -15,7 +15,7 @@ public:
     Environment(double dt0, vector<Object> OB0);
 	Environment(double dt0, vector<Object> OB0, bool realtimerender);
 
-    //funcs
+	//funcs
 	void push_back(Object Object0);
 	void push_back(vector<Object> OBJECT);
 
