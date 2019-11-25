@@ -15,7 +15,7 @@ vector <vec> Force::generate_Force(vector <Object> OB){
     return A;//returna B;
 }*/
 const double Force::gravity_acceleration = 1.;
-const double Force::gravitational_constant = 10.;
+const double Force::gravitational_constant = 30.;
 
 vector<IVV> Force::IndexPointForce_f = vector<IVV>(0);
 

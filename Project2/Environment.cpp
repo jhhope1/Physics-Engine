@@ -86,7 +86,7 @@ void Environment::simulate(double t){
 		Visualize::clearwindow();
 
 		for (int i = 0; i < OB.size(); i++)
-			Visualize::render(OB[i]->pos_f, OB[i]->rotmat_if * OB[i]->rotmat_bi.transpose(), &ourShader[i], window, VAO[i]);	
+			Visualize::render(OB[i]->pos_f, (OB[i]->rotmat_if * OB[i]->rotmat_bi).transpose(), &ourShader[i], window, VAO[i]);	
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
