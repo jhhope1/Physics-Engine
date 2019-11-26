@@ -1,46 +1,44 @@
 #include "Environment.h"
-Environment::Environment(){
-    dt = 1e-4;//default dt = 1e-4 [s]
+Environment::Environment(double dt0, vector<Object*> OB0, bool realtimerender) {
+	dt = dt0;
+	for (Object* ob : OB0) {
+		OB.push_back(ob);
+	}
+	this->realtimerender = realtimerender;
 }
-Environment::Environment(double dt0){
-    dt = dt0;
+Environment::Environment(double dt0, vector<Object*> OB0) {
+	Environment(dt0,OB0,false);
 }
 Environment::Environment(double dt, bool realtimerender) {
 	this->dt = dt;
 	this->realtimerender = realtimerender;
 }
-Environment::Environment(double dt0, vector<Object> OB0) {
-	dt = dt0;
-	OB = OB0;
+Environment::Environment(double dt0){
+	Environment(dt0, false);
 }
-Environment::Environment(double dt0, vector<Object> OB0, bool realtimerender) {
-	dt = dt0;
-	OB = OB0;
-	this->realtimerender = realtimerender;
+Environment::Environment(){
+    Environment(1e-4);//default dt = 1e-4 [s]
 }
 
-void Environment::push_back(Object Object0){
+void Environment::push_back(Object* Object0){
     OB.push_back(Object0);
 }
 
-void Environment::push_back(vector<Object> OBJECT) {
-	for (Object ob : OBJECT) {
+void Environment::push_back(vector<Object*> OBJECT) {
+	for (Object *ob : OBJECT) {
 		push_back(ob);
 	}
 }
 
 
 void Environment::step(){
+	double pre_E = KineticE();
+	vec pre_mom = momentum();
+	vec pre_angmom = AngMom();
 	Force::GenIndexPointForce_f(OB, Environment::dt);
-    vector<vec> F_f = Force::Force_f(OB);
-    vector<vec> T_f = Force::Torque_f(OB);
-	if (Force::IndexPointForce_f.size() != 2&&Force::IndexPointForce_f.size()!=8) {
-		int a = Force::IndexPointForce_f.size();
-		int b = a;
-	}
-    int N = OB.size();
-	for (int i = 0; i < N; i++) {
-		OB[i].Object_update(F_f[i], T_f[i], dt);
+
+	for (int i = 0; i < OB.size(); i++) {
+		OB[i]->Object_update_pos_rotmat(dt);
     }
 }
 
@@ -52,21 +50,16 @@ void Environment::simulate(double t){
 	for (int i = 0; i < OB.size(); i++)
 		ourShader.push_back(Shader("material.vs", "material.fs"));
 	vector <unsigned int> VBO(OB.size()),VAO(OB.size()),EBO(OB.size());
-	//Shader lampShader("lamp.vs", "lamp.fs");
-
-	
 
 	for (int i = 0; i < OB.size(); i++) {
-		Visualize::pushObject(OB[i]);
+		Visualize::pushObject(*(OB[i]));
 		Visualize::visual_Object_init(&VAO[i], &VBO[i], &EBO[i]);
 	}
+
 	for(; (nowt<t)&&(!glfwWindowShouldClose(window)) ; nowt+=dt){
 
 		step();
-		//if (int(nowt * 1000) % 1000 == 0) {
-			//cout << OB[0].Energy() << "\n";
-			//cout << OB[0].AngMom_f() << "\n";
-		//}
+
 		float currentFrame = glfwGetTime();
 		Visualize::deltaTime = currentFrame - Visualize::lastFrame;
 		Visualize::lastFrame = currentFrame;
@@ -78,20 +71,45 @@ void Environment::simulate(double t){
 		Visualize::clearwindow();
 
 		for (int i = 0; i < OB.size(); i++)
-			Visualize::render(OB[i].pos_f, (OB[i].rotmat_if * OB[i].rotmat_bi).transpose(), &ourShader[i], window, VAO[i]);	
+			Visualize::render(OB[i]->pos_f, (OB[i]->rotmat_if * OB[i]->rotmat_bi).transpose(), &ourShader[i], window, VAO[i]);	
+		
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
 	Visualize::terminate(VAO, VBO, EBO);
 }
 
-void Environment::print(int stn){
+vec Environment::AngMom() {
+	vec angmom;
+	for (Object *ob :OB) {
+		angmom += ob->AngMom_f();
+		angmom += ob->pos_f * ob->v_f * ob->m;
+	}
+	return angmom;
+}
+
+vec Environment::momentum() {
+	vec mom;
+	for (Object* ob : OB) {
+		mom += ob->v_f * ob->m;
+	}
+	return mom;
+}
+
+double Environment::KineticE() {
+	double K=0;
+	for (Object* ob : OB) {
+		K += ob->KineticE();
+	}
+	return K;
+}
+
+void Environment::print(double t){
     int obnum=0;
-    cout<<"\n\n\nReal time = "<<stn*dt<<"\n";
-    //cout<<"step "<<stn<<"\n";
-    for(Object ob:OB){
+    cout<<"\n\n\nReal time = "<<t<<"\n";
+    for(Object* ob: OB){
         obnum++;
-        //cout<<"\n\nObject "<<obnum<<"\n";
-        cout<<ob;
+        cout<<"\n\nObject "<<obnum<<"\n";
+        cout<<*ob;
     }
 }

@@ -29,11 +29,14 @@ class Object:public Rigidbody{
     vec w_i();
     vec w_f();
     vec IWW_b();
-    void Object_update(vec F_f, vec T_f, double dt);
+    void Object_update_pos_rotmat(double dt);
+	void Object_update_without_pos_rotmat(vec F_f, vec T_f, double dt);
 	double Energy();
+	double KineticE();
 	vec AngMom_f();
 	vec pos_b_pos_f(vec V);//position in b -> position in f
 	vec pos_f_vel_f(vec V);//pos in b -> vel in f
+	void ObjectPoints(vector <vec>* Pt);
 
     friend ostream& operator<<(ostream& output, const Object& H);
 };

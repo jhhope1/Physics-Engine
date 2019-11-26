@@ -133,7 +133,7 @@ public:
 			return BVV(true,D,N);
 		}
 		else {
-			return BVV(true,D,vec()-N);
+			return BVV(true,D,-1*N);
 		}
 	}
 };

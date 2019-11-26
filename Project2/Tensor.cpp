@@ -186,6 +186,18 @@ tensor::tensor(string S, double ph, double th, double ps){
     }
 }
 
+tensor::tensor(double m00, double m01, double m02, double m10, double m11, double m12, double m20, double m21, double m22) {
+	M[0][0] = m00;
+	M[0][1] = m01;
+	M[0][2] = m02;
+	M[1][0] = m10;
+	M[1][1] = m11;
+	M[1][2] = m12;
+	M[2][0] = m20;
+	M[2][1] = m21;
+	M[2][2] = m22;
+}
+
 void tensor::operator=(tensor A){
     for(int i=0 ; i<3 ; i++)for(int j=0 ; j<3 ; j++)M[i][j] = A.M[i][j];
 }
@@ -269,7 +281,7 @@ tensor tensor::transpose(){
 }
 tensor tensor::inverse(){
     double A[3][3];
-    double invdet = det();
+	double invdet = 1 / det();
     if(invdet==0){
         cout<<"warning: det of tensor is 0\n";
         return tensor();
@@ -380,6 +392,44 @@ tensor coor_trans(tensor R, tensor A){
 vec coor_trans(tensor R, vec A){
     Rotwarning(R);
     return R*A;
+}
+
+
+tensor tensor::fromaxis(vec Normal) {
+	double angle = Normal.norm();
+	if (angle == 0)return tensor();
+	Normal = Normal / angle;
+	return fromaxis(Normal, angle);
+}
+tensor tensor::fromaxis(vec Normal, double angle) {
+	double m00, m01, m02, m10, m11, m12, m20, m21, m22;
+	double c = cos(angle);
+	double s = sin(angle);
+	double t = 1.0 - c;
+	//  if axis is not already normalised then uncomment this
+	// double magnitude = Math.sqrt(Normal.V[0]*Normal.V[0] + Normal.V[1]*Normal.V[1] + Normal.V[2]*Normal.V[2]);
+	// if (magnitude==0) throw error;
+	// Normal.V[0] /= magnitude;
+	// Normal.V[1] /= magnitude;
+	// Normal.V[2] /= magnitude;
+
+	m00 = c + Normal.V[0] * Normal.V[0] * t;
+	m11 = c + Normal.V[1] * Normal.V[1] * t;
+	m22 = c + Normal.V[2] * Normal.V[2] * t;
+
+
+	double tmp1 = Normal.V[0] * Normal.V[1] * t;
+	double tmp2 = Normal.V[2] * s;
+	m10 = tmp1 + tmp2;
+	m01 = tmp1 - tmp2;
+	tmp1 = Normal.V[0] * Normal.V[2] * t;
+	tmp2 = Normal.V[1] * s;
+	m20 = tmp1 - tmp2;
+	m02 = tmp1 + tmp2;    tmp1 = Normal.V[1] * Normal.V[2] * t;
+	tmp2 = Normal.V[0] * s;
+	m21 = tmp1 + tmp2;
+	m12 = tmp1 - tmp2;
+	return tensor(m00, m01, m02, m10, m11, m12, m20, m21, m22);
 }
 
 vector<vec> operator+ (vector<vec> A, vector <vec> B){

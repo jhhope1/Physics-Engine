@@ -7,6 +7,7 @@
 using namespace std;
 const double PI = 3.141592653589793238462643383279;
 const double INFIMUM = 1e-9;
+const double INFIMUM_RELATAVELY_MOVE = 1e-5;
 class vec{
     public:
     double V[3];
@@ -52,6 +53,7 @@ class tensor{
     tensor(double ph, double th, double ps);//coordinate transformation rot frame -> body frame.
     tensor(string S, double ph, double th, double ps);
     tensor(double A[][3]);
+	tensor(double m00, double m01, double m02, double m10, double m11, double m12, double m20, double m21, double m22);
     
     //operators
     void operator =(tensor T);
@@ -74,6 +76,8 @@ class tensor{
     tensor transpose();
     tensor inverse();
     void torotmat();
+	static tensor fromaxis(vec Normal);
+	static tensor fromaxis(vec Normal, double angle);
     //pair<tensor,vec> diag(tensor T);//lambda, (I0,I1,I2), lambda*T*lambda.inv()
     
     friend ostream& operator<<(ostream& output, const tensor& H);
