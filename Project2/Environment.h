@@ -26,6 +26,6 @@ public:
 	vec momentum();
 	double KineticE();
 
-    void print(int a);
+    void print(double t);
 };
 #endif

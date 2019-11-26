@@ -92,6 +92,27 @@ vec Object::pos_b_pos_f(vec V) {
 vec Object::pos_f_vel_f(vec V) {
 	return v_f + w_f() * (V - pos_f);
 }
+
+void Object::ObjectPoints(vector <vec>* Pt) {
+	vector <vec> ckedvec;
+	vector <vec> Vertexes;
+	for (int k = 0; k < C.indnum; k++) {
+		vec V;
+		for (int w = 0; w < 3; w++) {
+			V.V[w] = C.vertices[C.indices[k] * 6 + w];
+		}
+		Vertexes.push_back(pos_b_pos_f(V));
+		if (Vertexes.size() % 3 == 0 && Vertexes.size() > 0) {
+			vec tricm = (Vertexes[Vertexes.size() - 1] + Vertexes[Vertexes.size() - 2] + Vertexes[Vertexes.size() - 3]) / 3;
+			Pt->push_back(tricm);
+		}
+		if (find(ckedvec.begin(), ckedvec.end(), V) != ckedvec.end())continue;
+		ckedvec.push_back(V);
+		Pt->push_back(pos_b_pos_f(V));
+	}
+	return;
+}
+
 ostream& operator<<(ostream& output, const Object& H){
     cout<<"PROPERTIES of Object\n\n";
     cout<<"pos_f = ";

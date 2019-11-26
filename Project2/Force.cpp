@@ -15,7 +15,7 @@ vector <vec> Force::generate_Force(vector <Object> OB){
     return A;//returna B;
 }*/
 const double Force::gravity_acceleration = 1.;
-const double Force::gravitational_constant = 30.;
+const double Force::gravitational_constant = 10.;
 
 vector<IVV> Force::IndexPointForce_f = vector<IVV>(0);
 
@@ -24,24 +24,24 @@ void Force::update_Object(Object* ob, vec workingpoint, vec force, double dt) {
 	ob->Object_update_without_pos_rotmat(force, (workingpoint - ob->pos_f) * force, dt);
 }
 
+double Force::collision_coefficient_wall(Object *ob, vec N, vec interpoint) {
+	vec w1_b = ob->w_b;
+	vec v1_f = ob->v_f;
+	vec r1_f = interpoint - ob->pos_f;
+	double m1 = ob->m;
+	tensor I1_b = ob->Inertia_b;
+
+	tensor R_1 = ob->rotmat_if * ob->rotmat_bi;
+
+	vec q1 = I1_b.inverse() * R_1.transpose() * (r1_f * N);
+
+	double co_const = v1_f.dot(N) + w1_b.dot(I1_b * q1);
+	double co_p = 1 / m1 + q1.dot(I1_b * q1);
+
+	return 2 * co_const / co_p;
+}
+
 double collision_coefficient(Object *ob1, Object *ob2, vec N, vec interpoint) {
-	/*vec w1_f = ob1->w_f();
-	vec w2_f = ob2->w_f();
-	vec v1_f = ob1->v_f;
-	vec v2_f = ob2->v_f;
-	vec r1_f = interpoint - ob1->pos_f;
-	vec r2_f = interpoint - ob2->pos_f;
-	double m1 = ob1->m;
-	double m2 = ob2->m;
-	tensor I1_f = coor_trans(ob1->rotmat_if, ob1->Inertia_i);
-	tensor I2_f = coor_trans(ob2->rotmat_if, ob2->Inertia_i);
-
-
-	double co_const = 2 * w1_f.dot(r1_f * N) + 2 * v1_f.dot(N) - 2 * w2_f.dot(r2_f * N) - 2 * v2_f.dot(N);
-	double co_p = (r1_f * N).dot(I1_f.inverse() * (r1_f * N)) + (r2_f * N).dot(I2_f.inverse() * (r2_f * N)) + 1 / m1 + 1 / m2;
-
-	return co_const / co_p;*/
-
 	vec w1_b = ob1->w_b;
 	vec w2_b = ob2->w_b;
 	vec v1_f = ob1->v_f;
@@ -63,24 +63,30 @@ double collision_coefficient(Object *ob1, Object *ob2, vec N, vec interpoint) {
 	double co_p = 1 / m1 + 1 / m2 + q1.dot(I1_b * q1) + q2.dot(I2_b * q2);
 
 	return 2*co_const / co_p;
-
 }
 
 bool Force::CanCollide(Object* A, Object* B) {
-	if ((A->cubesize + B->cubesize).normsquare() > 4*(A->pos_f - B->pos_f).normsquare()) {
-		return true;
-	}
-	return false;
+	return (A->cubesize + B->cubesize).normsquare() > 4 * (A->pos_f - B->pos_f).normsquare();
 }
 
 void Force::collide_update(vec normal_tot, vec interpoint_tot, Object* A, Object* B, double dt) {
 	double coe = collision_coefficient(A, B, normal_tot, interpoint_tot);//indexpointForce를 보내지 말고 그냥 여기에 들어가면 즉각적으로 update가 되도록 하는 함수를 만들어야겠다. 필요가 없고 순차적 충돌에서 에러가 발생함.
 
-	if ((A->pos_f_vel_f(interpoint_tot) - B->pos_f_vel_f(interpoint_tot)).dot(normal_tot) <= 0) {
+	if ((A->pos_f_vel_f(interpoint_tot) - B->pos_f_vel_f(interpoint_tot)).dot(normal_tot) < 0) {
 		return;
 	}
-	update_Object(B, interpoint_tot, coe * normal_tot , 1);
-	update_Object(A, interpoint_tot, -coe * normal_tot , 1);// stl이 그걸 못잡네..
+	update_Object(B, interpoint_tot, coe * normal_tot, 1);
+	update_Object(A, interpoint_tot, -coe * normal_tot, 1);// stl이 그걸 못잡네..
+}
+
+void Force::collide_update(vec normal_tot, vec interpoint_tot, Object* A) {
+	double coe = collision_coefficient_wall(A, normal_tot, interpoint_tot);//indexpointForce를 보내지 말고 그냥 여기에 들어가면 즉각적으로 update가 되도록 하는 함수를 만들어야겠다. 필요가 없고 순차적 충돌에서 에러가 발생함.
+
+	if (A->pos_f_vel_f(interpoint_tot).dot(normal_tot) > 0) {
+		return;
+	}
+
+	update_Object(A, interpoint_tot, -coe * normal_tot, 1);// 부호 결정
 }
 
 void Force::collide_update(vector <vec>* normalarr, vector<vec>* interpointarr, Object* A, Object* B, double dt) {
@@ -94,9 +100,7 @@ void Force::collide_update(vector <vec>* normalarr, vector<vec>* interpointarr, 
 		interpoint_tot += V;
 	}
 
-	normal_tot /= normalarr->size();
 	interpoint_tot /= interpointarr->size();
-
 	normal_tot = normal_tot / normal_tot.norm();
 
 	collide_update(normal_tot, interpoint_tot, A, B, dt);
@@ -115,26 +119,12 @@ int Force::Collision_Triangle_Point(Object* A, Object* B, double dt) {//A: trian
 		Ti.push_back(Triangle(A->pos_b_pos_f(V[0]), A->pos_b_pos_f(V[1]), A->pos_b_pos_f(V[2])));
 	}
 
-	vector <vec> ckedvec;
-	vector <vec> Vertexes;
-	for (int k = 0; k < B->C.indnum; k++) {
-		vec V;
-		for (int w = 0; w < 3; w++) {
-			V.V[w] = B->C.vertices[B->C.indices[k] * 6 + w];
-		}
-		Vertexes.push_back(B->pos_b_pos_f(V));
-		if (Vertexes.size() % 3 == 0 && Vertexes.size()>0) {
-			vec tricm = (Vertexes[Vertexes.size() - 1] + Vertexes[Vertexes.size() - 2] + Vertexes[Vertexes.size() - 3]) / 3;
-			Vj.push_back(tricm);
-		}
-		if (find(ckedvec.begin(), ckedvec.end(), V) != ckedvec.end())continue;
-		ckedvec.push_back(V);
-		Vj.push_back(B->pos_b_pos_f(V));
-	}
+	B->ObjectPoints(&Vj);
 	vec cubecenteri = A->pos_f;
 
 	//필요한 모든 점 구함.
 	
+	vector<vec> ckedvec;
 	int interpointnum = 0;
 	ckedvec.clear();
 	vector<vec> normalarr;
@@ -147,20 +137,19 @@ int Force::Collision_Triangle_Point(Object* A, Object* B, double dt) {//A: trian
 				continue;
 			}
 			if ((A->pos_f_vel_f(X.interpoint)-B->pos_f_vel_f(X.interpoint)).dot(X.normal)<0) {
-				//continue;
+				continue;
 			}
 
 			ckedvec.push_back(V);
 			interpointnum++;
 
-			//collide_update(X.normal,X.interpoint, A, B, dt);
-
 			interpointarr.push_back(X.interpoint);
 			normalarr.push_back(X.normal);
 		}
 	}
-	if(interpointnum)
-		collide_update(&normalarr,&interpointarr,A,B,dt);
+	if (interpointnum) {
+		collide_update(&normalarr, &interpointarr, A, B, dt);
+	}
 	return interpointnum;
 }
 
@@ -204,14 +193,12 @@ void Force::Collision_Line_Line(Object* A, Object* B, double dt) {
 				tri[trind] = T;
 				trind++;
 			}
-			//if (trind == 2)break;
 		}
-		if (trind >= 1) {
+		if (trind >= 2) {
 			Line L1 = Geomfunc::shareLineTT(tri[0], tri[1]);
 			BVV X = Intersect::lineline(L, L1);
 
 			collide_update(X.normal, X.interpoint, A, B, dt);
-			return;//모르겠다.
 		}
 	}
 }
@@ -219,23 +206,6 @@ void Force::Collision_Line_Line(Object* A, Object* B, double dt) {
 void Force::Gravity(int ind, Object* ob, double dt) {
 	vec g = vec(0, 0, -gravity_acceleration);
 	update_Object(ob, ob->pos_f, ob->m * g, dt);
-	tensor TENBF = ob->rotmat_if * ob->rotmat_bi;
-	vector <vec> Vob;
-	for (int k = 0; k < ob->C.indnum; k++) {
-		vec V;
-		for (int w = 0; w < 3; w++) {
-			V.V[w] = ob->C.vertices[ob->C.indices[k] * 6 + w];
-		}
-		Vob.push_back(TENBF * V + ob->pos_f);
-	}
-	vector<vec> ckedvec;
-	for (int i = 0; i < Vob.size(); i++) {
-		if (find(ckedvec.begin(), ckedvec.end(), Vob[i]) != ckedvec.end())continue;
-		ckedvec.push_back(Vob[i]);
-		if (Vob[i].V[2] < 0) {
-			IndexPointForce_f.push_back(IVV(ind,Vob[i],-100*ob->m*vec(0,0,Vob[i].V[2])));
-		}
-	}
 	return;
 }
 
@@ -250,17 +220,19 @@ void Force::Gravity_Object(vector<Object*> OB, double dt) {
 	}
 }
 
-int Force::GenIndexPointForce_f(vector <Object*> OB, double dt){
-    //vector <vec> B = trans_sf();
+void Force::GenIndexPointForce_f(vector <Object*> OB, double dt){
 	IndexPointForce_f.clear();
 
-
+	//-z direction gravity
 	for (int i = 0; i < OB.size(); i++) {
-		//Gravity(i, &OB[i]);
+		Gravity(i, OB[i], dt);
 	}
+
+	//gravity along objects
 	Gravity_Object(OB, dt);
 
 	int collidetot = 0;
+
 	//Colide Force
 	for (int i = 0; i < OB.size(); i++) {
 		for (int j = i + 1; j < OB.size(); j++) {
@@ -269,15 +241,16 @@ int Force::GenIndexPointForce_f(vector <Object*> OB, double dt){
 			collidenum += Collision_Triangle_Point(OB[i], OB[j], dt);
 			collidenum += Collision_Triangle_Point(OB[j], OB[i], dt);
 			collidetot += collidenum;
-			//collision 후에 두 물체를 매우 살짝 띄워놔야함. 안그러면 너무 많은 collision으로 인식해서 문제 생기는듯.->그냥 두 물체가 다가오는지 판단해서 충돌함수를 수정하는 것이 맞는듯.
+			
 			if (collidenum) {
 				continue;
 			}
 			Collision_Line_Line(OB[i], OB[j], dt);
 		}
 	}
-	return collidetot;
-    //return A;
+
+	//plain wall
+	wall(OB, vec(0, 0, 0), vec(0, 0, 1));
 }
 
 vector <vec> Force::Force_f(vector <Object*> OB) {
@@ -294,4 +267,27 @@ vector <vec> Force::Torque_f(vector <Object*> OB){
 		A[ivv.ind] += (ivv.workingpoint - OB[ivv.ind]->pos_f) * ivv.force;
 	}
     return A;//return B;
+}
+
+void Force::wall(vector <Object*> OB, vec point, vec plainnormal) {
+	vec parvec1;
+	vec parvec2;
+	if ((plainnormal * vec(1, 0, 0)).normsquare() > (plainnormal * vec(0, 1, 0)).normsquare()) {
+		parvec1 = plainnormal * vec(1, 0, 0);
+	}
+	else {
+		parvec1 = plainnormal * vec(0, 1, 0);
+	}
+	parvec2 = plainnormal * parvec1;
+	Triangle T(point, point+parvec1, point+parvec2);
+
+	for (Object* ob : OB) {
+		vector <vec>* Pt = new vector<vec>(0);
+		ob->ObjectPoints(Pt);
+		for (vec P : *Pt) {
+			if (P.dot(plainnormal) < point.dot(plainnormal)) {
+				collide_update(plainnormal, P, ob);
+			}
+		}
+	}
 }

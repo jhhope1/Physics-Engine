@@ -36,6 +36,7 @@ class Object:public Rigidbody{
 	vec AngMom_f();
 	vec pos_b_pos_f(vec V);//position in b -> position in f
 	vec pos_f_vel_f(vec V);//pos in b -> vel in f
+	void ObjectPoints(vector <vec>* Pt);
 
     friend ostream& operator<<(ostream& output, const Object& H);
 };

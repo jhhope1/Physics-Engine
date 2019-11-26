@@ -2,7 +2,7 @@
 Environment::Environment(double dt0, vector<Object*> OB0, bool realtimerender) {
 	dt = dt0;
 	for (Object* ob : OB0) {
-		OB.push_back(ob);//ㅋㅋ이렇게 하면 안될걸 알지만 아몰랑 난 입문자니깐~ 응 안돼.
+		OB.push_back(ob);
 	}
 	this->realtimerender = realtimerender;
 }
@@ -35,17 +35,10 @@ void Environment::step(){
 	double pre_E = KineticE();
 	vec pre_mom = momentum();
 	vec pre_angmom = AngMom();
-	if (Force::GenIndexPointForce_f(OB, Environment::dt)) {
-		cout << pre_E << " " << KineticE() << "\n";
-		cout << pre_mom << " " << momentum() << "\n";
-		cout << pre_angmom << " " << AngMom() << "\n";
+	Force::GenIndexPointForce_f(OB, Environment::dt);
 
-	}
-    //vector<vec> F_f = Force::Force_f(OB);
-    //vector<vec> T_f = Force::Torque_f(OB);
 	for (int i = 0; i < OB.size(); i++) {
-		OB[i]->Object_update_pos_rotmat(dt);//업데이트를 너무 여러번 해서 발생하는 문제같기도 함. 문제를 어떻게 해결해야할지 모르겠음.
-		//위치랑 rotmat만 놔두고 다 업데이트 한 다음에 이걸 따로 업데이트 하면 안되나?
+		OB[i]->Object_update_pos_rotmat(dt);
     }
 }
 
@@ -57,9 +50,6 @@ void Environment::simulate(double t){
 	for (int i = 0; i < OB.size(); i++)
 		ourShader.push_back(Shader("material.vs", "material.fs"));
 	vector <unsigned int> VBO(OB.size()),VAO(OB.size()),EBO(OB.size());
-	//Shader lampShader("lamp.vs", "lamp.fs");
-
-	
 
 	for (int i = 0; i < OB.size(); i++) {
 		Visualize::pushObject(*(OB[i]));
@@ -69,11 +59,7 @@ void Environment::simulate(double t){
 	for(; (nowt<t)&&(!glfwWindowShouldClose(window)) ; nowt+=dt){
 
 		step();
-		//if (int(nowt * 1000) % 1000 == 0) {
-			//cout << KineticE()<<"\n";
-			//cout << OB[0].Energy() << "\n";
-			//cout << OB[0].AngMom_f() << "\n";
-		//}
+
 		float currentFrame = glfwGetTime();
 		Visualize::deltaTime = currentFrame - Visualize::lastFrame;
 		Visualize::lastFrame = currentFrame;
@@ -81,12 +67,12 @@ void Environment::simulate(double t){
 			dt = Visualize::deltaTime;
 		}
 
-
 		Visualize::processinput(window, Visualize::deltaTime);
 		Visualize::clearwindow();
 
 		for (int i = 0; i < OB.size(); i++)
 			Visualize::render(OB[i]->pos_f, (OB[i]->rotmat_if * OB[i]->rotmat_bi).transpose(), &ourShader[i], window, VAO[i]);	
+		
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
@@ -101,6 +87,7 @@ vec Environment::AngMom() {
 	}
 	return angmom;
 }
+
 vec Environment::momentum() {
 	vec mom;
 	for (Object* ob : OB) {
@@ -117,10 +104,9 @@ double Environment::KineticE() {
 	return K;
 }
 
-void Environment::print(int stn){
+void Environment::print(double t){
     int obnum=0;
-    cout<<"\n\n\nReal time = "<<stn*dt<<"\n";
-    //cout<<"step "<<stn<<"\n";
+    cout<<"\n\n\nReal time = "<<t<<"\n";
     for(Object* ob: OB){
         obnum++;
         cout<<"\n\nObject "<<obnum<<"\n";
