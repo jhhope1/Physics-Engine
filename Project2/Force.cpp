@@ -20,6 +20,80 @@ const double Force::gravitational_constant = 10.;
 vector<IVV> Force::IndexPointForce_f = vector<IVV>(0);
 
 
+void Force::avoid_overlap(vector <Object*> OB, double dt) {//이거 고칠라면 전부 다 뜯어야되서 일단 보류. 
+	//나중에는 이런식으로 0.1배 해서 스택으로 안쌓고 값 계산해서 한번에 떨어뜨려놓는 걸 목표로 하는게 맞다.
+	stack <pii> CollideOB;
+	for (int i = 0; i < OB.size(); i++) {
+		for (int j = i + 1; j < OB.size(); j++) {
+			if (CanCollide(OB[i], OB[j])) {
+				int collidenum = 0;
+				collidenum += Collision_Triangle_Point(OB[i], OB[j], 1);
+				collidenum += Collision_Triangle_Point(OB[j], OB[i], 1);
+				if (collidenum==0)collidenum += Collision_Line_Line(OB[i], OB[j], dt);
+				if (collidenum)CollideOB.push(pii(i, j));
+			}
+		}
+	}
+
+	if (CollideOB.size()>=1) {
+		int a = 1;
+	}
+
+	while (CollideOB.size()) {
+		pii P = CollideOB.top();
+		CollideOB.pop();
+		
+		double dx = 0;
+		for (int i = 0; i < 3; i++) {
+			dx += abs(OB[P.first]->v_f.V[i]);
+			dx += abs(OB[P.second]->v_f.V[i]);
+		}
+		dx *= dt;
+		vec r = (OB[P.first]->pos_f - OB[P.second]->pos_f);
+		r = r / r.norm();
+		vec dn = r * dx*0.1;
+
+		OB[P.first]->pos_f += dn;
+		OB[P.second]->pos_f -= dn;
+		
+		for (int i = 0; i < OB.size(); i++) {
+			if (i == P.first)continue;
+			if (CanCollide(OB[i], OB[P.first])) {
+				int collidenum = 0;
+				collidenum += Collision_Triangle_Point(OB[i], OB[P.first], 1);
+				collidenum += Collision_Triangle_Point(OB[P.first], OB[i], 1);
+				if (collidenum==0)collidenum += Collision_Line_Line(OB[i], OB[P.first], dt);
+				if (collidenum)CollideOB.push(pii(i, P.first));
+			}
+		}
+		for (int i = 0; i < OB.size(); i++) {
+			if (i == P.second || i == P.first)continue;
+			if (CanCollide(OB[i], OB[P.second])) {
+				int collidenum = 0;
+				collidenum += Collision_Triangle_Point(OB[i], OB[P.second], 1);
+				collidenum += Collision_Triangle_Point(OB[P.second], OB[i], 1);
+				if (collidenum)collidenum += Collision_Line_Line(OB[i], OB[P.second], dt);
+				if (collidenum)CollideOB.push(pii(i, P.second));
+			}
+		}
+	}	
+}
+
+
+void Force::avoid_overlap_wall(vector <Object*> OB, vec point, vec plainnormal) {
+	for (Object* ob : OB) {
+		vector <vec>* Pt = new vector<vec>(0);
+		ob->ObjectPoints(Pt);
+		for (vec P : *Pt) {
+			if (P.dot(plainnormal) < point.dot(plainnormal)) {
+				ob->pos_f += -P.dot(plainnormal) * plainnormal;
+				break;
+			}
+		}
+	}
+}
+
+
 void Force::update_Object(Object* ob, vec workingpoint, vec force, double dt) {
 	ob->Object_update_without_pos_rotmat(force, (workingpoint - ob->pos_f) * force, dt);
 }
@@ -41,7 +115,7 @@ double Force::collision_coefficient_wall(Object *ob, vec N, vec interpoint) {
 	return 2 * co_const / co_p;
 }
 
-double collision_coefficient(Object *ob1, Object *ob2, vec N, vec interpoint) {
+double Force::collision_coefficient(Object *ob1, Object *ob2, vec N, vec interpoint) {
 	vec w1_b = ob1->w_b;
 	vec w2_b = ob2->w_b;
 	vec v1_f = ob1->v_f;
@@ -65,22 +139,69 @@ double collision_coefficient(Object *ob1, Object *ob2, vec N, vec interpoint) {
 	return 2*co_const / co_p;
 }
 
+double Force::collision_coefficient_inelastic(Object* ob1, Object* ob2, vec N, vec interpoint) {
+	vec w1_b = ob1->w_b;
+	vec w2_b = ob2->w_b;
+	vec v1_f = ob1->v_f;
+	vec v2_f = ob2->v_f;
+	vec r1_f = interpoint - ob1->pos_f;
+	vec r2_f = interpoint - ob2->pos_f;
+	double m1 = ob1->m;
+	double m2 = ob2->m;
+	tensor I1_b = ob1->Inertia_b;
+	tensor I2_b = ob2->Inertia_b;
+	tensor I1_f = coor_trans(ob1->rotmat_if, ob1->Inertia_i);
+	tensor I2_f = coor_trans(ob2->rotmat_if, ob2->Inertia_i);
+
+	double co_const = (ob1->pos_f_vel_f(interpoint) - ob2->pos_f_vel_f(interpoint)).dot(N);
+	double co_p = (N / m1 +  ((I1_f.inverse() * (r1_f * N)) * r1_f) + (N / m2 + ((I2_f.inverse() * (r2_f * N)) * r2_f))).dot(N);
+	return co_const / co_p;
+}
+
+
+double Force::collision_coefficient_wall_inelastic(Object* ob1, vec N, vec interpoint) {
+	vec w1_b = ob1->w_b;
+	vec v1_f = ob1->v_f;
+	vec r1_f = interpoint - ob1->pos_f;
+	double m1 = ob1->m;
+	tensor I1_b = ob1->Inertia_b;
+	tensor I1_f = coor_trans(ob1->rotmat_if, ob1->Inertia_i);
+
+	double co_const = ob1->pos_f_vel_f(interpoint).dot(N);
+	double co_p = (N / m1 + ((I1_f.inverse() * (r1_f * N)) * r1_f)).dot(N);
+	return co_const / co_p;
+}
+
+double Force::collision_coefficient_Repulsive_coefficient(Object* ob1, Object* ob2, vec N, vec interpoint, double Repulsive_coefficient) {
+	double co_elastic = collision_coefficient(ob1, ob2, N, interpoint);
+	double co_inelastic = collision_coefficient_inelastic(ob1, ob2, N, interpoint);
+	return co_elastic * Repulsive_coefficient + co_inelastic * (1-Repulsive_coefficient);
+}
+
+double Force::collision_coefficient_Repulsive_coefficient_wall(Object* ob1, vec N, vec interpoint, double Repulsive_coefficient) {
+	double co_elastic = collision_coefficient_wall(ob1, N, interpoint);
+	double co_inelastic = collision_coefficient_wall_inelastic(ob1, N, interpoint);
+
+	return co_elastic * Repulsive_coefficient + co_inelastic * (1-Repulsive_coefficient);
+}
+
 bool Force::CanCollide(Object* A, Object* B) {
 	return (A->cubesize + B->cubesize).normsquare() > 4 * (A->pos_f - B->pos_f).normsquare();
 }
 
-void Force::collide_update(vec normal_tot, vec interpoint_tot, Object* A, Object* B, double dt) {
-	double coe = collision_coefficient(A, B, normal_tot, interpoint_tot);//indexpointForce를 보내지 말고 그냥 여기에 들어가면 즉각적으로 update가 되도록 하는 함수를 만들어야겠다. 필요가 없고 순차적 충돌에서 에러가 발생함.
+void Force::collide_update(vec normal_tot, vec interpoint_tot, Object* A, Object* B, double dt) {//object
+	double coe = collision_coefficient_Repulsive_coefficient(A, B, normal_tot, interpoint_tot, 0.0);//indexpointForce를 보내지 말고 그냥 여기에 들어가면 즉각적으로 update가 되도록 하는 함수를 만들어야겠다. 필요가 없고 순차적 충돌에서 에러가 발생함.
 
 	if ((A->pos_f_vel_f(interpoint_tot) - B->pos_f_vel_f(interpoint_tot)).dot(normal_tot) < 0) {
 		return;
 	}
+
 	update_Object(B, interpoint_tot, coe * normal_tot, 1);
 	update_Object(A, interpoint_tot, -coe * normal_tot, 1);// stl이 그걸 못잡네..
 }
 
-void Force::collide_update(vec normal_tot, vec interpoint_tot, Object* A) {
-	double coe = collision_coefficient_wall(A, normal_tot, interpoint_tot);//indexpointForce를 보내지 말고 그냥 여기에 들어가면 즉각적으로 update가 되도록 하는 함수를 만들어야겠다. 필요가 없고 순차적 충돌에서 에러가 발생함.
+void Force::collide_update(vec normal_tot, vec interpoint_tot, Object* A) {//wall
+	double coe = collision_coefficient_Repulsive_coefficient_wall(A, normal_tot, interpoint_tot, 0.0);//indexpointForce를 보내지 말고 그냥 여기에 들어가면 즉각적으로 update가 되도록 하는 함수를 만들어야겠다. 필요가 없고 순차적 충돌에서 에러가 발생함.
 
 	if (A->pos_f_vel_f(interpoint_tot).dot(normal_tot) > 0) {
 		return;
@@ -153,10 +274,11 @@ int Force::Collision_Triangle_Point(Object* A, Object* B, double dt) {//A: trian
 	return interpointnum;
 }
 
-void Force::Collision_Line_Line(Object* A, Object* B, double dt) {
+int Force::Collision_Line_Line(Object* A, Object* B, double dt) {
 	vector <Triangle> Ti;
 	vector <vec> Vj;
 	vector <Line> Lj;
+	int collnum = 0;
 
 	for (int k = 0; k < A->C.indnum / 3; k++) {
 		vec V[3];
@@ -199,8 +321,10 @@ void Force::Collision_Line_Line(Object* A, Object* B, double dt) {
 			BVV X = Intersect::lineline(L, L1);
 
 			collide_update(X.normal, X.interpoint, A, B, dt);
+			collnum++;
 		}
 	}
+	return collnum;
 }
 
 void Force::Gravity(int ind, Object* ob, double dt) {
@@ -231,8 +355,6 @@ void Force::GenIndexPointForce_f(vector <Object*> OB, double dt){
 	//gravity along objects
 	Gravity_Object(OB, dt);
 
-	int collidetot = 0;
-
 	//Colide Force
 	for (int i = 0; i < OB.size(); i++) {
 		for (int j = i + 1; j < OB.size(); j++) {
@@ -240,17 +362,17 @@ void Force::GenIndexPointForce_f(vector <Object*> OB, double dt){
 			int collidenum = 0;
 			collidenum += Collision_Triangle_Point(OB[i], OB[j], dt);
 			collidenum += Collision_Triangle_Point(OB[j], OB[i], dt);
-			collidetot += collidenum;
-			
 			if (collidenum) {
 				continue;
 			}
-			Collision_Line_Line(OB[i], OB[j], dt);
+			collidenum+=Collision_Line_Line(OB[i], OB[j], dt);
 		}
 	}
 
 	//plain wall
 	wall(OB, vec(0, 0, 0), vec(0, 0, 1));
+	avoid_overlap(OB,dt);
+	avoid_overlap_wall(OB, vec(0, 0, 0), vec(0, 0, 1));
 }
 
 vector <vec> Force::Force_f(vector <Object*> OB) {
@@ -270,17 +392,6 @@ vector <vec> Force::Torque_f(vector <Object*> OB){
 }
 
 void Force::wall(vector <Object*> OB, vec point, vec plainnormal) {
-	vec parvec1;
-	vec parvec2;
-	if ((plainnormal * vec(1, 0, 0)).normsquare() > (plainnormal * vec(0, 1, 0)).normsquare()) {
-		parvec1 = plainnormal * vec(1, 0, 0);
-	}
-	else {
-		parvec1 = plainnormal * vec(0, 1, 0);
-	}
-	parvec2 = plainnormal * parvec1;
-	Triangle T(point, point+parvec1, point+parvec2);
-
 	for (Object* ob : OB) {
 		vector <vec>* Pt = new vector<vec>(0);
 		ob->ObjectPoints(Pt);
@@ -289,5 +400,19 @@ void Force::wall(vector <Object*> OB, vec point, vec plainnormal) {
 				collide_update(plainnormal, P, ob);
 			}
 		}
+	}
+}
+
+//object - object // object와 wall을 동시에 다루고 싶은데 class가 달라서 이전에 신경 안썼던 메모리 누수가 걱정된다
+void Force::resistance(Object ob1, Object ob2, double mu_s, double mu_k, vec normal, vec interpoint) {
+	bool relatavely_move = false;
+	if (((ob1.pos_f_vel_f(interpoint) - ob2.pos_f_vel_f(interpoint)) * normal).normsquare() > INFIMUM_RELATAVELY_MOVE) {
+		relatavely_move = true;
+	}
+
+
+	if (relatavely_move) {
+		vec tangent = (ob1.pos_f_vel_f(interpoint) - ob2.pos_f_vel_f(interpoint)) * normal;
+		tangent = tangent / tangent.norm();
 	}
 }

@@ -7,6 +7,7 @@
 using namespace std;
 const double PI = 3.141592653589793238462643383279;
 const double INFIMUM = 1e-9;
+const double INFIMUM_RELATAVELY_MOVE = 1e-5;
 class vec{
     public:
     double V[3];
