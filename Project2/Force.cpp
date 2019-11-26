@@ -35,10 +35,6 @@ void Force::avoid_overlap(vector <Object*> OB, double dt) {//이거 고칠라면 전부 
 		}
 	}
 
-	if (CollideOB.size()>=1) {
-		int a = 1;
-	}
-
 	while (CollideOB.size()) {
 		pii P = CollideOB.top();
 		CollideOB.pop();
@@ -51,7 +47,7 @@ void Force::avoid_overlap(vector <Object*> OB, double dt) {//이거 고칠라면 전부 
 		dx *= dt;
 		vec r = (OB[P.first]->pos_f - OB[P.second]->pos_f);
 		r = r / r.norm();
-		vec dn = r * dx*0.1;
+		vec dn = r * dx*0.3;
 
 		OB[P.first]->pos_f += dn;
 		OB[P.second]->pos_f -= dn;
@@ -72,7 +68,7 @@ void Force::avoid_overlap(vector <Object*> OB, double dt) {//이거 고칠라면 전부 
 				int collidenum = 0;
 				collidenum += Collision_Triangle_Point(OB[i], OB[P.second], 1);
 				collidenum += Collision_Triangle_Point(OB[P.second], OB[i], 1);
-				if (collidenum)collidenum += Collision_Line_Line(OB[i], OB[P.second], dt);
+				if (collidenum == 0)collidenum += Collision_Line_Line(OB[i], OB[P.second], dt);
 				if (collidenum)CollideOB.push(pii(i, P.second));
 			}
 		}
@@ -356,6 +352,7 @@ void Force::GenIndexPointForce_f(vector <Object*> OB, double dt){
 	Gravity_Object(OB, dt);
 
 	//Colide Force
+
 	for (int i = 0; i < OB.size(); i++) {
 		for (int j = i + 1; j < OB.size(); j++) {
 			if (CanCollide(OB[i], OB[j]) == false)continue;
