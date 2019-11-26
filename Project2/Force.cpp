@@ -255,4 +255,6 @@ vector <vec> Force::Torque_f(vector <Object> OB){
 		A[ivv.ind] += (ivv.workingpoint - OB[ivv.ind].pos_f) * ivv.force;
 	}
     return A;//return B;
+	return A;
+	return A;
 }
