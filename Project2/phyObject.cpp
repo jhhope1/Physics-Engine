@@ -55,7 +55,7 @@ cube::cube() {
 }
 cube::cube(vec resize) {
 	cube C = cube();
-	for (int i = 0; i < vertexnum; i+=stride) {
+	for (int i = 0; i < vertexnum; i += stride) {
 		for (int j = 0; j < 3; j++) {
 			vertices[i + j] = C.vertices[i + j] * resize.V[j];
 		}
@@ -70,3 +70,36 @@ cube::cube(vec resize) {
 unsigned int cube::vertexnum = 36 * 6;
 unsigned int cube::indnum = 36;
 unsigned int cube::stride = 6;
+
+
+line::line() {
+	float vertices[] = {
+		-0.5f, 0.f, 0.f, 1.f, 0.f, 0.f,
+		 0.5f, 0.f, 0.f, 1.f, 0.f, 0.f
+	};
+	unsigned int indices[] = {
+		0,1
+	};
+	for (int i = 0; i < vertexnum; i++) {
+		this->vertices[i] = vertices[i];
+	}
+	for (int i = 0; i < indnum; i++) {
+		this->indices[i] = indices[i];
+	}
+}
+line::line(vec s, vec e) {
+	for (int i = 0; i < 3; i++) {
+		vertices[i] = s.V[i];
+	}
+	for (int i = 0; i < 3; i++) {
+		vertices[i+6] = e.V[i];
+	}
+	vertices[3] = 1;
+	vertices[9] = 1;
+	indices[0] = 0;
+	indices[1] = 1;
+}
+unsigned int line::vertexnum = 2 * 6;
+unsigned int line::indnum = 2;
+unsigned int line::stride = 6;
+

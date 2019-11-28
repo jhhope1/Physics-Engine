@@ -11,9 +11,15 @@
 #include"camera.h"
 #include "Object.h"
 using namespace std;
+const double LINE_WIDTH = 1.5;
+
 class Visualize {
 public:
 	static const int SCR_W = 800, SCR_H = 600;
+	static int axisnum;
+	static double axis_unit_x;
+	static double axis_unit_y;
+	static double axis_thick;
 
 	static Camera camera;// = Camera(glm::vec3(0.f, 0.f, 3.f));
 	static float lastX;// = SCR_W / 2.0f;
@@ -29,60 +35,32 @@ public:
 	static vector <int> allindices;
 	static vector <float> allvertices;
 
-	//functions 이거 어케하는거임? 왜 static은 정의하고 body를 쓰는게 안되는거지..
+	static void draw_axis(unsigned int *VAO_axis, Shader *ourShader) {
+		ourShader->use();
 
-	/*
-	static void init_vars();
+		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_W / (float)SCR_H, 0.1f, 100.0f);
+		ourShader->setMat4("projection", projection);
 
-	static void processinput(GLFWwindow* window, float delatTime);
-	static GLFWwindow* mkwindow();
-	static void clearwindow();
-	static void ourModel(vec pos, tensor R, Shader* ourShader);
+		// camera/view transformation
+		glm::mat4 view = camera.GetViewMatrix();
+		ourShader->setMat4("view", view);
 
-	static void pushObject(Object ob);
-	static void pushcube(float* vertices, unsigned int* indices, unsigned int vs, unsigned int is, string S);
-	static void copyVerticesIndices(float* vertices, unsigned int* indices);
-	static void visual_Object_init(unsigned int* VAO, unsigned int* VBO, unsigned int* EBO);
-	static void render(vec pos, tensor R, Shader* ourShader, GLFWwindow* window, unsigned int VAO);
-	static void visualize(vector<Object> OB);
-
-
-	static void framebuffer_size_callback(GLFWwindow* window, int w, int h);
-	static void mouse_callback(GLFWwindow* window, double xpos, double ypos);
-	static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
-	*/
-
-	static void visualize(vector<Object> OB) {
-		GLFWwindow* window = mkwindow();
-		vector<Shader> lightShader;
-		Shader lampShader("lamp.vs", "lamp.fs");
-
-
-		for (int i = 0; i < OB.size(); i++)
-			lightShader.push_back(Shader("material.vs", "material.fs"));
-
-		unsigned int* lightVBO = new unsigned int[OB.size()];
-		unsigned int* lightVAO = new unsigned int[OB.size()];
-		unsigned int* lightEBO = new unsigned int[OB.size()];
-
-
-
-		for (int i = 0; i < OB.size(); i++)
-			visual_Object_init(lightVAO + i, lightVBO + i, lightEBO + i);
-		while (!glfwWindowShouldClose(window)) {
-			float currentFrame = glfwGetTime();
-			deltaTime = currentFrame - lastFrame;
-			lastFrame = currentFrame;
-
-			processinput(window, deltaTime);
-			clearwindow();
-
-			for (int i = 0; i < OB.size(); i++)
-				render(OB[i].pos_f, (OB[i].rotmat_if * OB[i].rotmat_bi), &lightShader[i], window, lightVAO[i]);
-
-			glfwSwapBuffers(window);
-			glfwPollEvents();
+		//ourmodel
+		glm::mat4 M4 = glm::mat4();
+		for (int i = 0; i < 4; i++) {
+			M4[i][i] = 1;
 		}
+
+		unsigned int modelLoc = glGetUniformLocation(ourShader->ID, "model");
+
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(M4));
+
+
+		glBindVertexArray(*VAO_axis);
+
+		glDrawElements(GL_LINES, 8 * axisnum , GL_UNSIGNED_INT, (void*)(0));
+
+		glBindVertexArray(0);
 	}
 
 	static void pushObject(Object ob) {
@@ -118,7 +96,7 @@ public:
 		delete[] indices;
 	}
 
-	static void render(vec pos, tensor R, Shader* ourShader, GLFWwindow* window, unsigned int VAO) {
+	static void render(vec pos, tensor R, Shader* ourShader, unsigned int VAO) {
 
 		// get matrix's uniform location and set matrix
 		//ourShader->use();
@@ -244,10 +222,12 @@ public:
 		unsigned int modelLoc = glGetUniformLocation(ourShader->ID, "model");
 
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		glDrawElements(GL_TRIANGLES, allindices.size(), GL_UNSIGNED_INT, (void*)(0));
+		glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, (void*)(0));
 	}
 	static void pushcube(float* vertices, unsigned int* indices, unsigned int vs, unsigned int is, string S) {
-		unsigned int OFFSET = allindices.size();
+		allindices.clear();
+		allvertices.clear();
+		//unsigned int OFFSET = allindices.size();
 
 		if (vs == 0 || is == 0) {
 			cout << "pushcube: vertices, indices are empty\n";
@@ -261,10 +241,37 @@ public:
 			allvertices.push_back(vertices[i]);
 		}
 		for (int i = 0; i < is; i++) {
-			allindices.push_back(indices[i] + OFFSET);
+			allindices.push_back(indices[i]);// + OFFSET);
 		}
 	}
 
+	static void push_axis() {
+		allvertices.clear();
+		allindices.clear();
+		int OFFSET = 0;
+		for (int j = -axisnum ; j < axisnum; j++) {
+			OFFSET = allindices.size();
+			line L = line(vec(axis_unit_x * j, -100, 0), vec(axis_unit_x * j, 100, 0));
+			for (int i = 0; i < L.vertexnum; i++) {
+				allvertices.push_back(L.vertices[i]);
+			}
+			for (int i = 0; i < L.indnum; i++) {
+				allindices.push_back(L.indices[i]+OFFSET);
+			}
+		}
+
+		for (int j = -axisnum; j < axisnum; j++) {
+			OFFSET = allindices.size();
+			line L = line(vec(-100, axis_unit_y * j, 0), vec(100, axis_unit_y * j, 0));
+
+			for (int i = 0; i < L.vertexnum; i++) {
+				allvertices.push_back(L.vertices[i]);
+			}
+			for (int i = 0; i < L.indnum; i++) {
+				allindices.push_back(L.indices[i]+OFFSET);
+			}
+		}
+	}
 
 
 	static void copyVerticesIndices(float* vertices, unsigned int* indices) {

@@ -33,12 +33,8 @@ void Object::operator =(Object A){
     B = C;
 }
 
-vec Object::w_i(){
-    vec wi = coor_trans(rotmat_bi,w_b);
-    return wi;
-}
 vec Object::w_f(){
-    vec wn = coor_trans(rotmat_if,w_i());
+    vec wn = coor_trans(rotmat_if,w_b);
     return wn;
 }
 vec Object::IWW_b(){
@@ -50,7 +46,7 @@ vec Object::IWW_b(){
 }
 void Object::Object_update_pos_rotmat(double dt) {
 	pos_f += v_f * dt;
-	rotmat_if *= tensor::fromaxis(w_i() * dt);//cross 함수는 헷갈린다. 정의를 바꿨다..
+	rotmat_if *= tensor::fromaxis(w_b * dt);//cross 함수는 헷갈린다. 정의를 바꿨다..
 	// if th, ph, ps -> booooom(th = 0), 터지는 것 방지를 위해 quarternion 기법 써야할듯
 	rotmat_if.torotmat();
 	w_b += (IWW_b() / Ib) * dt;
@@ -59,35 +55,34 @@ void Object::Object_update_pos_rotmat(double dt) {
 void Object::Object_update_without_pos_rotmat(vec F_f, vec T_f, double dt) {
 	v_f += F_f * dt / m;
 	tensor rotmat_fi = rotmat_if.transpose();
-	tensor rotmat_ib = rotmat_bi.transpose();
 
-	vec T_b = coor_trans(rotmat_ib, coor_trans(rotmat_fi, T_f));
+	vec T_b = coor_trans(rotmat_fi, T_f);
 
 	w_b += ((T_b) / Ib) * dt;
 }
 double Object::Energy() {
 	double E = 0.;
 	E += 0.5 * m * v_f.dot(v_f);
-	E += 0.5 * w_f().dot(coor_trans(rotmat_if, Inertia_i) * w_f());
+	E += 0.5 * w_f().dot(coor_trans(rotmat_if, Inertia_b) * w_f());
 	E += 9.81 * m * pos_f.V[2];
 	return E;
 }
 double Object::KineticE() {
 	double E = 0.;
 	E += 0.5 * m * v_f.dot(v_f);
-	E += 0.5 * w_f().dot(coor_trans(rotmat_if, Inertia_i) * w_f());
+	E += 0.5 * w_f().dot(coor_trans(rotmat_if, Inertia_b) * w_f());
 	return E;
 }
  
 vec Object::AngMom_f() {
 	vec L;
-	L = coor_trans(rotmat_if, Inertia_i)*w_f();
+	L = coor_trans(rotmat_if, Inertia_b)*w_f();
 	return L;
 }
 
 
 vec Object::pos_b_pos_f(vec V) {
-	return pos_f + rotmat_if * rotmat_bi * V;
+	return pos_f + rotmat_if * V;
 }
 vec Object::pos_f_vel_f(vec V) {
 	return v_f + w_f() * (V - pos_f);

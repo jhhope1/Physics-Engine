@@ -69,7 +69,9 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <IncludePath>C:\Users\User\OneDrive\문서\서울대학교\CS\OpenGL_learn\eigen-eigen-323c052e1731;C:\Users\User\OneDrive\문서\서울대학교\CS\OpenGL_learn\eigen-eigen-323c052e1731\unsupported\Eigen;$(IncludePath)</IncludePath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -87,7 +89,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\User\OneDrive\문서\서울대학교\CS\OpenGL_learn\glfw-3.3\include;C:\Users\User\OneDrive\문서\서울대학교\CS\OpenGL_learn\glad\include;C:\Users\User\OneDrive\문서\서울대학교\CS\OpenGL_learn\glm;C:\Users\User\OneDrive\문서\서울대학교\CS\OpenGL_learn\stb-master\stb-master;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\User\OneDrive\문서\서울대학교\CS\OpenGL_learn\glfw-3.3\include;C:\Users\User\OneDrive\문서\서울대학교\CS\OpenGL_learn\glad\include;C:\Users\User\OneDrive\문서\서울대학교\CS\OpenGL_learn\glm;C:\Users\User\OneDrive\문서\서울대학교\CS\OpenGL_learn\stb-master\stb-master;C:\Users\User\OneDrive\문서\서울대학교\CS\OpenGL_learn\eigen-eigen-323c052e1731\Eigen;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -127,6 +129,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\OneDrive\문서\서울대학교\CS\OpenGL_learn\Project1\Project1\glad.c" />
+    <ClCompile Include="Eigen_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="Environment.cpp" />
     <ClCompile Include="Environment_test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -135,6 +140,7 @@
     <ClCompile Include="Geometry_test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="Lagrangian.cpp" />
     <ClCompile Include="Object.cpp" />
     <ClCompile Include="Object_test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -158,6 +164,7 @@
     <ClInclude Include="Environment.h" />
     <ClInclude Include="Force.h" />
     <ClInclude Include="Geometry.h" />
+    <ClInclude Include="Lagrangian.h" />
     <ClInclude Include="Object.h" />
     <ClInclude Include="PhyObject.h" />
     <ClInclude Include="Rigidbody.h" />

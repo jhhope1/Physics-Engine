@@ -26,7 +26,6 @@ class Object:public Rigidbody{
     void operator =(Object A);
 
     //funcs
-    vec w_i();
     vec w_f();
     vec IWW_b();
     void Object_update_pos_rotmat(double dt);

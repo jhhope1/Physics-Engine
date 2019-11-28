@@ -1,5 +1,4 @@
 #include "Force.h"
-#include "Geometry.h"
 /*
 Force::trans_sf(){
     for(string S:scaned_ForceField){
@@ -14,8 +13,10 @@ vector <vec> Force::generate_Force(vector <Object> OB){
     for(int i=0 ; i<OB.size() ; i++)A.push_back(vec());
     return A;//returna B;
 }*/
-const double Force::gravity_acceleration = 1.;
+const double Force::gravity_acceleration = 10.;
 const double Force::gravitational_constant = 10.;
+const double Force::spring_constant = 1.;
+const double Force::REPULSIVE_COEFFICIENT = 0.7;
 
 vector<IVV> Force::IndexPointForce_f = vector<IVV>(0);
 
@@ -89,9 +90,43 @@ void Force::avoid_overlap_wall(vector <Object*> OB, vec point, vec plainnormal) 
 	}
 }
 
+void Force::update_Object(vector<Object*> OB, VectorXd qddot, double dt) {
+	//cout << qddot << "\n";
+	//이거 무조건 다시 식 뒤져봐야됨->해결됨-> 생각보다 라그랑지안이 잘 안터짐
+	for (int i = 0; i < OB.size(); i++) {
+		for (int j = 0; j < 3; j++) {
+			OB[i]->v_f.V[j] += qddot(6 * i + j)*dt;
+		}
+		for (int j = 0; j < 3; j++) {
+			OB[i]->w_b.V[j] += qddot(6 * i + 3 + j)*dt;
+		}
 
-void Force::update_Object(Object* ob, vec workingpoint, vec force, double dt) {
-	ob->Object_update_without_pos_rotmat(force, (workingpoint - ob->pos_f) * force, dt);
+	}
+}
+
+void Force::update_Object_Force(Object* ob, vec workingpoint, vec force, double dt) {
+	//ob->Object_update_without_pos_rotmat(force, (workingpoint - ob->pos_f) * force, dt);//use Newtonian
+
+	//use Lagrangian
+	vector<Object*> OB;
+	OB.push_back(ob);
+	vector<VV> FT;
+	vec T_b = ob->rotmat_if.transpose()*((workingpoint - ob->pos_f) * force);
+	FT.push_back(VV(force, T_b));
+	//cout << T_b << "\n";
+	//VectorXd qddot = Lagrangian::qddot_without_FT(OB);
+	VectorXd qddot = Lagrangian::qddot_FT(OB,FT);
+
+	//cout << qddot << "\n";
+	update_Object(OB, qddot, dt);
+}
+
+void Force::update_Object_without_Force(Object* ob, double dt){
+	vector<Object*> OB;
+	OB.push_back(ob);
+	VectorXd qddot = Lagrangian::qddot_without_FT(OB);
+	//cout << qddot << "\n";
+	update_Object(OB, qddot, dt);
 }
 
 double Force::collision_coefficient_wall(Object *ob, vec N, vec interpoint) {
@@ -101,7 +136,7 @@ double Force::collision_coefficient_wall(Object *ob, vec N, vec interpoint) {
 	double m1 = ob->m;
 	tensor I1_b = ob->Inertia_b;
 
-	tensor R_1 = ob->rotmat_if * ob->rotmat_bi;
+	tensor R_1 = ob->rotmat_if;
 
 	vec q1 = I1_b.inverse() * R_1.transpose() * (r1_f * N);
 
@@ -123,8 +158,8 @@ double Force::collision_coefficient(Object *ob1, Object *ob2, vec N, vec interpo
 	tensor I1_b = ob1->Inertia_b;
 	tensor I2_b = ob2->Inertia_b;
 
-	tensor R_1 = ob1->rotmat_if * ob1->rotmat_bi;
-	tensor R_2 = ob2->rotmat_if * ob2->rotmat_bi;
+	tensor R_1 = ob1->rotmat_if;
+	tensor R_2 = ob2->rotmat_if;
 
 	vec q1 = I1_b.inverse() * R_1.transpose() * (r1_f * N);
 	vec q2 = I2_b.inverse() * R_2.transpose() * (r2_f * N);
@@ -146,8 +181,8 @@ double Force::collision_coefficient_inelastic(Object* ob1, Object* ob2, vec N, v
 	double m2 = ob2->m;
 	tensor I1_b = ob1->Inertia_b;
 	tensor I2_b = ob2->Inertia_b;
-	tensor I1_f = coor_trans(ob1->rotmat_if, ob1->Inertia_i);
-	tensor I2_f = coor_trans(ob2->rotmat_if, ob2->Inertia_i);
+	tensor I1_f = coor_trans(ob1->rotmat_if, ob1->Inertia_b);
+	tensor I2_f = coor_trans(ob2->rotmat_if, ob2->Inertia_b);
 
 	double co_const = (ob1->pos_f_vel_f(interpoint) - ob2->pos_f_vel_f(interpoint)).dot(N);
 	double co_p = (N / m1 +  ((I1_f.inverse() * (r1_f * N)) * r1_f) + (N / m2 + ((I2_f.inverse() * (r2_f * N)) * r2_f))).dot(N);
@@ -161,7 +196,7 @@ double Force::collision_coefficient_wall_inelastic(Object* ob1, vec N, vec inter
 	vec r1_f = interpoint - ob1->pos_f;
 	double m1 = ob1->m;
 	tensor I1_b = ob1->Inertia_b;
-	tensor I1_f = coor_trans(ob1->rotmat_if, ob1->Inertia_i);
+	tensor I1_f = coor_trans(ob1->rotmat_if, ob1->Inertia_b);
 
 	double co_const = ob1->pos_f_vel_f(interpoint).dot(N);
 	double co_p = (N / m1 + ((I1_f.inverse() * (r1_f * N)) * r1_f)).dot(N);
@@ -186,24 +221,24 @@ bool Force::CanCollide(Object* A, Object* B) {
 }
 
 void Force::collide_update(vec normal_tot, vec interpoint_tot, Object* A, Object* B, double dt) {//object
-	double coe = collision_coefficient_Repulsive_coefficient(A, B, normal_tot, interpoint_tot, 0.0);//indexpointForce를 보내지 말고 그냥 여기에 들어가면 즉각적으로 update가 되도록 하는 함수를 만들어야겠다. 필요가 없고 순차적 충돌에서 에러가 발생함.
+	double coe = collision_coefficient_Repulsive_coefficient(A, B, normal_tot, interpoint_tot, REPULSIVE_COEFFICIENT);//indexpointForce를 보내지 말고 그냥 여기에 들어가면 즉각적으로 update가 되도록 하는 함수를 만들어야겠다. 필요가 없고 순차적 충돌에서 에러가 발생함.
 
 	if ((A->pos_f_vel_f(interpoint_tot) - B->pos_f_vel_f(interpoint_tot)).dot(normal_tot) < 0) {
 		return;
 	}
 
-	update_Object(B, interpoint_tot, coe * normal_tot, 1);
-	update_Object(A, interpoint_tot, -coe * normal_tot, 1);// stl이 그걸 못잡네..
+	update_Object_Force(B, interpoint_tot, coe * normal_tot, 1);
+	update_Object_Force(A, interpoint_tot, -coe * normal_tot, 1);// stl이 그걸 못잡네..
 }
 
 void Force::collide_update(vec normal_tot, vec interpoint_tot, Object* A) {//wall
-	double coe = collision_coefficient_Repulsive_coefficient_wall(A, normal_tot, interpoint_tot, 0.0);//indexpointForce를 보내지 말고 그냥 여기에 들어가면 즉각적으로 update가 되도록 하는 함수를 만들어야겠다. 필요가 없고 순차적 충돌에서 에러가 발생함.
+	double coe = collision_coefficient_Repulsive_coefficient_wall(A, normal_tot, interpoint_tot, REPULSIVE_COEFFICIENT);//indexpointForce를 보내지 말고 그냥 여기에 들어가면 즉각적으로 update가 되도록 하는 함수를 만들어야겠다. 필요가 없고 순차적 충돌에서 에러가 발생함.
 
 	if (A->pos_f_vel_f(interpoint_tot).dot(normal_tot) > 0) {
 		return;
 	}
 
-	update_Object(A, interpoint_tot, -coe * normal_tot, 1);// 부호 결정
+	update_Object_Force(A, interpoint_tot, -coe * normal_tot, 1);// 부호 결정
 }
 
 void Force::collide_update(vector <vec>* normalarr, vector<vec>* interpointarr, Object* A, Object* B, double dt) {
@@ -325,7 +360,7 @@ int Force::Collision_Line_Line(Object* A, Object* B, double dt) {
 
 void Force::Gravity(int ind, Object* ob, double dt) {
 	vec g = vec(0, 0, -gravity_acceleration);
-	update_Object(ob, ob->pos_f, ob->m * g, dt);
+	update_Object_Force(ob, ob->pos_f, ob->m * g, dt);
 	return;
 }
 
@@ -334,25 +369,25 @@ void Force::Gravity_Object(vector<Object*> OB, double dt) {
 		for (int j = i + 1; j < OB.size(); j++) {
 			vec r = OB[j]->pos_f - OB[i]->pos_f;
 			vec F = gravitational_constant*r/r.norm()/r.dot(r);
-			update_Object(OB[i], OB[i]->pos_f, F, dt);
-			update_Object(OB[j], OB[j]->pos_f, -1*F, dt);
+			update_Object_Force(OB[i], OB[i]->pos_f, F, dt);
+			update_Object_Force(OB[j], OB[j]->pos_f, -1*F, dt);
 		}
 	}
 }
 
-void Force::GenIndexPointForce_f(vector <Object*> OB, double dt){
-	IndexPointForce_f.clear();
-
-	//-z direction gravity
-	for (int i = 0; i < OB.size(); i++) {
-		Gravity(i, OB[i], dt);
+void Force::Spring_Objects_two_body(Object* ob1, Object* ob2, vec workingpoint1_b, vec workingpoint2_b, double Natural_length, double dt) {
+	vec r = ob2->pos_b_pos_f(workingpoint2_b) - ob1->pos_b_pos_f(workingpoint1_b);
+	r -= r / r.norm() * Natural_length;
+	update_Object_Force(ob1, ob1->pos_b_pos_f(workingpoint1_b), spring_constant * r, dt);
+	update_Object_Force(ob2, ob2->pos_b_pos_f(workingpoint2_b), -spring_constant * r, dt);
+}
+void Force::Spring_Objects(vector<Object*>OB, double dt) {
+	for (int i = 0; i < OB.size()-1; i++) {
+		Spring_Objects_two_body(OB[i], OB[i + 1], vec(), vec(), 4., dt);
 	}
+}
 
-	//gravity along objects
-	Gravity_Object(OB, dt);
-
-	//Colide Force
-
+void Force::Collide_Force(vector<Object*> OB, double dt) {
 	for (int i = 0; i < OB.size(); i++) {
 		for (int j = i + 1; j < OB.size(); j++) {
 			if (CanCollide(OB[i], OB[j]) == false)continue;
@@ -362,14 +397,38 @@ void Force::GenIndexPointForce_f(vector <Object*> OB, double dt){
 			if (collidenum) {
 				continue;
 			}
-			collidenum+=Collision_Line_Line(OB[i], OB[j], dt);
+			collidenum += Collision_Line_Line(OB[i], OB[j], dt);
 		}
 	}
+}
+
+void Force::GenIndexPointForce_f(vector <Object*> OB, double dt){
+	IndexPointForce_f.clear();
+
+	//-z direction gravity
+	for (int i = 0; i < OB.size(); i++) {
+		//Gravity(i, OB[i], dt);
+	}
+
+	//gravity along objects
+	Gravity_Object(OB, dt);
+
+	//spring
+	//Spring_Objects(OB, dt);
+
+	//Colide Force
+	//Collide_Force(OB, dt);
 
 	//plain wall
-	wall(OB, vec(0, 0, 0), vec(0, 0, 1));
+	//wall(OB, vec(0, 0, 0), vec(0, 0, 1));
+
+	//avoid_overlap
 	avoid_overlap(OB,dt);
-	avoid_overlap_wall(OB, vec(0, 0, 0), vec(0, 0, 1));
+	//avoid_overlap_wall(OB, vec(0, 0, 0), vec(0, 0, 1));
+
+	for (int i = 0; i < OB.size(); i++) {
+		update_Object_without_Force(OB[i], dt);
+	}
 }
 
 vector <vec> Force::Force_f(vector <Object*> OB) {

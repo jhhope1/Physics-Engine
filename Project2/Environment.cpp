@@ -51,6 +51,13 @@ void Environment::simulate(double t){
 		ourShader.push_back(Shader("material.vs", "material.fs"));
 	vector <unsigned int> VBO(OB.size()),VAO(OB.size()),EBO(OB.size());
 
+	unsigned int VAO_axis, VBO_axis, EBO_axis;
+	Shader ourShader_axis = Shader("shader.vs", "shader.fs");
+	if(axis)glLineWidth(Visualize::axis_thick);
+
+	if(axis)Visualize::push_axis();
+	if(axis)Visualize::visual_Object_init(&VAO_axis, &VBO_axis, &EBO_axis);
+
 	for (int i = 0; i < OB.size(); i++) {
 		Visualize::pushObject(*(OB[i]));
 		Visualize::visual_Object_init(&VAO[i], &VBO[i], &EBO[i]);
@@ -70,8 +77,10 @@ void Environment::simulate(double t){
 		Visualize::processinput(window, Visualize::deltaTime);
 		Visualize::clearwindow();
 
+
+		if(axis)Visualize::draw_axis(&VAO_axis, &ourShader_axis);
 		for (int i = 0; i < OB.size(); i++)
-			Visualize::render(OB[i]->pos_f, (OB[i]->rotmat_if * OB[i]->rotmat_bi).transpose(), &ourShader[i], window, VAO[i]);	
+			Visualize::render(OB[i]->pos_f, (OB[i]->rotmat_if).transpose(), &ourShader[i], VAO[i]);	
 		
 		glfwSwapBuffers(window);
 		glfwPollEvents();

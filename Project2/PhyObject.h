@@ -15,4 +15,16 @@ public:
 	float vertices[36*6];
 	unsigned int indices[36];
 };
+
+class line {
+public:
+	static unsigned int vertexnum;
+	static unsigned int indnum;
+	static unsigned int stride;
+	line();
+	line(vec s, vec e);
+	float vertices[2*6];
+	unsigned int indices[2];
+
+};
 #endif

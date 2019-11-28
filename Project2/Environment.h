@@ -4,7 +4,8 @@
 #include "Visualize.h"
 class Environment{
 public:
-	bool realtimerender=true;
+	bool realtimerender = true;
+	bool axis = true;
     double dt;
 	vector<Object*> OB;
 
