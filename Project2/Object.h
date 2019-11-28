@@ -39,4 +39,13 @@ class Object:public Rigidbody{
 
     friend ostream& operator<<(ostream& output, const Object& H);
 };
+class Objects {
+public:
+	vector<Object*> OB;
+	//generators
+	Objects(vector<Object*> OB);
+
+	//functions
+	vector <double> f();//function pointer를 가지고 잘 놀아보면 Objects에서 f를 외부에서 가지고 놀 수 있을 것 같은데 어떻게 해야될지는 아직 모르겠음.
+};
 #endif

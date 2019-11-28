@@ -15,7 +15,8 @@ public:
 };
 class Force{
 public:
-    //변수가 없는 것이 맞을라나, c++프로젝트를 처음해봐서 잘 모르겠다.
+	static vector <VV> FT_tot;//FT.size() == Object num, Tourque_b!!!!! -> 변환해줘야함
+    //변수가 없는 것이 맞을라나, c++프로젝트를 처음해봐서 잘 모르겠다.//있는게 맞는듯 하다
     //vector <string> scaned_ForceField_f;//cin으로 Force Field를 받아서 계산해준다. 근데 일단 이건 나중의 일. 일단은 그냥 돌아가기만 하게 만들어야겠다.
     //vector <string> formed_ForceField_f;
     //vector <string> scaned_Force_OB_f;//cin으로 Object들간의 Force Field를 받아서 계산해준다.
@@ -31,6 +32,7 @@ public:
 	static const double gravitational_constant;
 	static const double spring_constant;
 	static const double REPULSIVE_COEFFICIENT;
+
 	static vector<IVV> IndexPointForce_f;
 	static bool CanCollide(Object *A, Object *B);
 	static int Collision_Triangle_Point(Object *A, Object *B, double dt);
@@ -42,7 +44,9 @@ public:
 	static void Spring_Objects(vector<Object*>OB, double dt);
 	static void Collide_Force(vector<Object*> OB, double dt);
 	static void update_Object_Force(Object* ob, vec workingpoint, vec force, double dt);
+	static void update_Object_Force(vector<Object*> OB, double dt);
 	static void update_Object_without_Force(Object* ob, double dt);
+	static void update_Object_without_Force(vector<Object*> ob, double dt);
 	static void update_Object(vector<Object*> OB, VectorXd qddot, double dt);
 	static void collide_update(vector <vec>* normalarr, vector<vec>* interpointarr, Object* A, Object* B, double dt);
 	static void collide_update(vec normal_tot, vec interpoint_tot, Object* A, Object* B, double dt);

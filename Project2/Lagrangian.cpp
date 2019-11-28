@@ -2,6 +2,17 @@
 
 vector<double> f(vector<Object*> OB) {//천장에 꼭대기점이 붙어있음
 	vector <double> f;
+	for (int i = 0; i < OB.size()-1; i++) {
+		vec A = OB[i]->pos_b_pos_f(vec(0, 0, OB[i]->cubesize.V[2] / 2)) - OB[i + 1]->pos_b_pos_f(vec(0, 0, -OB[i + 1]->cubesize.V[2] / 2));
+		for (int j = 0; j < 3; j++) {
+			f.push_back(A.V[j]);
+		}
+	}
+	vec A = OB[OB.size() - 1]->pos_b_pos_f(vec(0, 0, OB[OB.size() - 1]->cubesize.V[2] / 2));
+	for (int i = 0; i < 3; i++) {
+		f.push_back(A.V[i]);
+	}
+	return f;
 	//return f;
 	/*
 	for (int i = 0; i < OB.size(); i++) {
