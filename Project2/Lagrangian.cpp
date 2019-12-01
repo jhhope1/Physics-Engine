@@ -2,6 +2,16 @@
 
 vector<double> f(vector<Object*> OB) {//천장에 꼭대기점이 붙어있음
 	vector <double> f;
+	//return f;
+	//팽이 구속조건
+	for (int i = 0; i < OB.size(); i++) {
+		vec A = OB[i]->pos_b_pos_f(vec(0, 0, -1));
+		for (int j = 0; j < 3; j++) {
+			f.push_back(A.V[j]);
+		}
+	}
+	return f;
+	//n중 진자 구속조건
 	for (int i = 0; i < OB.size()-1; i++) {
 		vec A = OB[i]->pos_b_pos_f(vec(0, 0, OB[i]->cubesize.V[2] / 2)) - OB[i + 1]->pos_b_pos_f(vec(0, 0, -OB[i + 1]->cubesize.V[2] / 2));
 		for (int j = 0; j < 3; j++) {
@@ -13,14 +23,13 @@ vector<double> f(vector<Object*> OB) {//천장에 꼭대기점이 붙어있음
 		f.push_back(A.V[i]);
 	}
 	return f;
-	//return f;
-	/*
+
+	//n차 용수철 진자 구속조건->천장에 매달리기
 	for (int i = 0; i < OB.size(); i++) {
 		vec A = OB[i]->pos_b_pos_f(vec(0, 0, OB[i]->cubesize.V[2] / 2));
 		for(int j=0 ; j<3 ; j++)f.push_back(A.V[j]);	
 	}
 	return f;
-	*/
 }
 vector<double> operator +(vector<double> f, vector<double> g) {
 	vector <double> h;
@@ -54,14 +63,14 @@ MatrixXd dfdq(vector<Object*> OBtemp, int lambdan, vector<double> f_origin) {
 			indbj++;
 		}
 
-		tensor temptensor = OBtemp[i]->rotmat_if;
+		tensor temptensor = OBtemp[i]->rotmat_bf;
 		for (int j = 0; j < 3; j++) {//theta_x_i+=dX의 미분값
-			OBtemp[i]->rotmat_if *= tensor(j, LAGRANGIAN_DX);//bi = bi*pb;
+			OBtemp[i]->rotmat_bf *= tensor(j, LAGRANGIAN_DX);//bi = bi*pb;
 			vector <double> T = f(OBtemp) - f_origin;
 			for (int k = 0; k < T.size(); k++) {
 				B(k, indbj) = T[k] / LAGRANGIAN_DX;
 			}
-			OBtemp[i]->rotmat_if = temptensor;
+			OBtemp[i]->rotmat_bf = temptensor;
 			indbj++;
 		}
 	}
@@ -137,11 +146,11 @@ void MAKEC(VectorXd *C, MatrixXd B,vector<Object*> OB,vector<Object*> OBtemp, in
 			OBtemp[i]->pos_f.V[j] = OB[i]->pos_f.V[j];
 		}
 		for (int j = 0; j < 3; j++) {
-			OBtemp[i]->rotmat_if *= tensor(j, LAGRANGIAN_DX);//bi = bi*pb;
+			OBtemp[i]->rotmat_bf *= tensor(j, LAGRANGIAN_DX);//bi = bi*pb;
 			vector<double> f_temp = f(OBtemp);
 			MatrixXd T = dfdq(OBtemp, lambdan, f_temp);
 			TEMP += (T - B) / LAGRANGIAN_DX * OBtemp[i]->w_b.V[j];
-			OBtemp[i]->rotmat_if = OB[i]->rotmat_if;
+			OBtemp[i]->rotmat_bf = OB[i]->rotmat_bf;
 		}
 	}
 	*C = TEMP * qdot;//size = lambdan
@@ -202,7 +211,17 @@ VectorXd Lagrangian::qddot_without_FT(vector<Object*> OB) {//qi 순서: OB[i], x1,
 	//강제 운동은 일단은 무시한다. 힘 작용하는 것만
 	int lambdan = f(OB).size();
 	if (lambdan == 0) {
-		return VectorXd::Zero(OB.size()*6);
+		VectorXd V = VectorXd::Zero(OB.size() * 6);
+		int ind = 0;
+		for (Object* ob : OB) {
+			vec deltawb = (ob->IWW_b() / ob->Ib);
+			ind += 3;
+			for (int i = 0; i < 3; i++) {
+				V(ind) = deltawb.V[i];
+				ind++;
+			}
+		}
+		return V;
 	}
 
 	vector<Object*> OBtemp;

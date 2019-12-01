@@ -4,7 +4,7 @@ using namespace std;
 
 //generator
 vec::vec(){
-    for(int i=0 ; i<3 ; i++)V[i]=0;
+    for(int i=0 ; i<3 ; i++)this->V[i]=0.;
 }
 vec::vec(double A[3]){
     for(int i=0 ; i<3 ; i++){

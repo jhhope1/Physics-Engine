@@ -1,4 +1,5 @@
 #include"PhyObject.h"
+#include"Geometry.h"
 cube::cube() {
 	float vertices[] = {
 		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
@@ -87,6 +88,59 @@ line::line() {
 		this->indices[i] = indices[i];
 	}
 }
+
+unsigned int top::vertexnum = 18 * 100;
+unsigned int top::indnum = 3*100;
+unsigned int top::stride = 6;
+
+top::top() {
+	int n = 100;
+	double z = 1;
+	double R = 1;
+	vec bottom(0, 0, -1);
+	vec A[100];
+	for (int i = 0; i < n; i++) {
+		A[i] = vec(sin(i * 2 * PI / n) * R, cos(i * 2 * PI / n), z);
+	}
+
+	Triangle T[100];
+	for (int i = 0; i < n-1; i++) {
+		T[i].a = bottom;
+		T[i].b = A[i];
+		T[i].c = A[i + 1];
+	}
+	T[n-1].a = bottom;
+	T[n-1].b = A[n - 1];
+	T[n-1].c = A[0];
+	for (int i = 0; i < n; i++) {
+		vec N = (T[i].a - T[i].b) * (T[i].c - T[i].b);
+		N /= N.norm();
+		for (int j = 0; j < 3; j++) {
+			vertices[18*i+j] = T[i].a.V[j];
+		}
+		for (int j = 0; j < 3; j++) {
+			vertices[18*i+6+j] = T[i].b.V[j];
+		}
+		for (int j = 0; j < 3; j++) {
+			vertices[18*i+12+j] = T[i].c.V[j];
+		}
+		if (i != 0) {
+			for (int j = 0; j < 3; j++) {
+				vertices[18 * i + j + 3] = N.V[j];
+			}
+			for (int j = 0; j < 3; j++) {
+				vertices[18 * i + 6 + j + 3] = N.V[j];
+			}
+			for (int j = 0; j < 3; j++) {
+				vertices[18 * i + 12 + j + 3] = N.V[j];
+			}
+		}
+	}
+	for (int i = 0; i < indnum; i++) {
+		indices[i] = i;
+	}
+}
+
 line::line(vec s, vec e) {
 	for (int i = 0; i < 3; i++) {
 		vertices[i] = s.V[i];

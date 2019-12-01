@@ -1,25 +1,9 @@
 #include "Force.h"
-/*
-Force::trans_sf(){
-    for(string S:scaned_ForceField){
-        for(int i=0 ; i<S.size() ; i++){
-            
-        }
-    }
-}*//*
-vector <vec> Force::generate_Force(vector <Object> OB){
-    //vector <vec> B = trans_sf();
-    vector <vec> A;
-    for(int i=0 ; i<OB.size() ; i++)A.push_back(vec());
-    return A;//returna B;
-}*/
 const double Force::gravity_acceleration = 10.;
 const double Force::gravitational_constant = 10.;
 const double Force::spring_constant = 1.;
-const double Force::REPULSIVE_COEFFICIENT = 0.7;
+const double Force::REPULSIVE_COEFFICIENT = 0.0;
 vector<VV> Force::FT_tot = vector<VV>(0);
-
-vector<IVV> Force::IndexPointForce_f = vector<IVV>(0);
 
 
 void Force::avoid_overlap(vector <Object*> OB, double dt) {//이거 고칠라면 전부 다 뜯어야되서 일단 보류. 
@@ -36,8 +20,10 @@ void Force::avoid_overlap(vector <Object*> OB, double dt) {//이거 고칠라면 전부 
 			}
 		}
 	}
-
+	int n = 0;
 	while (CollideOB.size()) {
+		n++;
+		if (n == 10)break;
 		pii P = CollideOB.top();
 		CollideOB.pop();
 		
@@ -112,7 +98,7 @@ void Force::update_Object_Force(Object* ob, vec workingpoint, vec force, double 
 	vector<Object*> OB;
 	OB.push_back(ob);
 	vector<VV> FT;
-	vec T_b = ob->rotmat_if.transpose()*((workingpoint - ob->pos_f) * force);
+	vec T_b = ob->rotmat_bf.transpose()*((workingpoint - ob->pos_f) * force);
 	FT.push_back(VV(force, T_b));
 	//cout << T_b << "\n";
 	//VectorXd qddot = Lagrangian::qddot_without_FT(OB);
@@ -146,7 +132,7 @@ double Force::collision_coefficient_wall(Object *ob, vec N, vec interpoint) {
 	double m1 = ob->m;
 	tensor I1_b = ob->Inertia_b;
 
-	tensor R_1 = ob->rotmat_if;
+	tensor R_1 = ob->rotmat_bf;
 
 	vec q1 = I1_b.inverse() * R_1.transpose() * (r1_f * N);
 
@@ -168,8 +154,8 @@ double Force::collision_coefficient(Object *ob1, Object *ob2, vec N, vec interpo
 	tensor I1_b = ob1->Inertia_b;
 	tensor I2_b = ob2->Inertia_b;
 
-	tensor R_1 = ob1->rotmat_if;
-	tensor R_2 = ob2->rotmat_if;
+	tensor R_1 = ob1->rotmat_bf;
+	tensor R_2 = ob2->rotmat_bf;
 
 	vec q1 = I1_b.inverse() * R_1.transpose() * (r1_f * N);
 	vec q2 = I2_b.inverse() * R_2.transpose() * (r2_f * N);
@@ -191,8 +177,8 @@ double Force::collision_coefficient_inelastic(Object* ob1, Object* ob2, vec N, v
 	double m2 = ob2->m;
 	tensor I1_b = ob1->Inertia_b;
 	tensor I2_b = ob2->Inertia_b;
-	tensor I1_f = coor_trans(ob1->rotmat_if, ob1->Inertia_b);
-	tensor I2_f = coor_trans(ob2->rotmat_if, ob2->Inertia_b);
+	tensor I1_f = coor_trans(ob1->rotmat_bf, ob1->Inertia_b);
+	tensor I2_f = coor_trans(ob2->rotmat_bf, ob2->Inertia_b);
 
 	double co_const = (ob1->pos_f_vel_f(interpoint) - ob2->pos_f_vel_f(interpoint)).dot(N);
 	double co_p = (N / m1 +  ((I1_f.inverse() * (r1_f * N)) * r1_f) + (N / m2 + ((I2_f.inverse() * (r2_f * N)) * r2_f))).dot(N);
@@ -206,7 +192,7 @@ double Force::collision_coefficient_wall_inelastic(Object* ob1, vec N, vec inter
 	vec r1_f = interpoint - ob1->pos_f;
 	double m1 = ob1->m;
 	tensor I1_b = ob1->Inertia_b;
-	tensor I1_f = coor_trans(ob1->rotmat_if, ob1->Inertia_b);
+	tensor I1_f = coor_trans(ob1->rotmat_bf, ob1->Inertia_b);
 
 	double co_const = ob1->pos_f_vel_f(interpoint).dot(N);
 	double co_p = (N / m1 + ((I1_f.inverse() * (r1_f * N)) * r1_f)).dot(N);
@@ -419,7 +405,7 @@ void Force::GenIndexPointForce_f(vector <Object*> OB, double dt){
 
 	//-z direction gravity
 	for (int i = 0; i < OB.size(); i++) {
-		Gravity(i, OB[i], dt);
+		//Gravity(i, OB[i], dt);
 	}
 
 	//gravity along objects
@@ -445,22 +431,6 @@ void Force::GenIndexPointForce_f(vector <Object*> OB, double dt){
 	for (int i = 0; i < OB.size(); i++) {
 		update_Object_without_Force(OB[i], dt);
 	}*/
-}
-
-vector <vec> Force::Force_f(vector <Object*> OB) {
-	vector <vec> A = vector<vec>(OB.size());
-	for (IVV ivv : IndexPointForce_f) {
-		A[ivv.ind] += ivv.force;
-	}
-	return A;
-}
-
-vector <vec> Force::Torque_f(vector <Object*> OB){
-    vector <vec> A = vector<vec>(OB.size());
-	for (IVV ivv : IndexPointForce_f) {
-		A[ivv.ind] += (ivv.workingpoint - OB[ivv.ind]->pos_f) * ivv.force;
-	}
-    return A;//return B;
 }
 
 void Force::wall(vector <Object*> OB, vec point, vec plainnormal) {

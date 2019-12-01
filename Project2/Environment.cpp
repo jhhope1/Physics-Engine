@@ -32,11 +32,7 @@ void Environment::push_back(vector<Object*> OBJECT) {
 
 
 void Environment::step(){
-	double pre_E = KineticE();
-	vec pre_mom = momentum();
-	vec pre_angmom = AngMom();
 	Force::GenIndexPointForce_f(OB, Environment::dt);
-
 	for (int i = 0; i < OB.size(); i++) {
 		OB[i]->Object_update_pos_rotmat(dt);
     }
@@ -66,7 +62,6 @@ void Environment::simulate(double t){
 	for(; (nowt<t)&&(!glfwWindowShouldClose(window)) ; nowt+=dt){
 
 		step();
-
 		float currentFrame = glfwGetTime();
 		Visualize::deltaTime = currentFrame - Visualize::lastFrame;
 		Visualize::lastFrame = currentFrame;
@@ -80,7 +75,7 @@ void Environment::simulate(double t){
 
 		if(axis)Visualize::draw_axis(&VAO_axis, &ourShader_axis);
 		for (int i = 0; i < OB.size(); i++)
-			Visualize::render(OB[i]->pos_f, (OB[i]->rotmat_if).transpose(), &ourShader[i], VAO[i]);	
+			Visualize::render(OB[i]->pos_f, (OB[i]->rotmat_bf).transpose(), &ourShader[i], VAO[i], OB[i]->C.vertexnum);	
 		
 		glfwSwapBuffers(window);
 		glfwPollEvents();

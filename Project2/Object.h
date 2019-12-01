@@ -5,18 +5,12 @@
 using namespace std;
 class Object:public Rigidbody{
     public:
-    // Rigidbody에서는 불변량, Object에서는 변량을 instance로 가짐
-    vec pos_f;//pos in fixed cart coord.
+    vec pos_f;
 	vec cubesize;
-	cube C;
+	top C;
     vec w_b;
     vec v_f;
-    tensor rotmat_if;/*rotmat_in = initial cartesian coordinate -> fixed cartesian coordinate
-    I = coor_trans(rotmat_if, coortrans(rotmat_bi, I_b));//notation is not as good in mat mul 
-    */
-    //shape of Object를 넣고싶은데 수식모양일 것 같아서 string으로 담다가 visualize할때 보여줄지 아니면 새로운 class를 만들어서 박아버릴까 고민
-	//일단 지금은 cube로만.
-   //generator
+    tensor rotmat_bf;
     Object();
     Object(Rigidbody RB, vec posf, vec wb, vec vf, tensor rotmatif);
     Object(Rigidbody RB);//initial condition of position,w,v,rotmat are 0,0,0,1

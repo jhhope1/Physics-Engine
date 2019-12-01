@@ -107,7 +107,7 @@ public:
 		}
 		vec N = A.Nhat();
 		if (N.dot(cubecenter - B) > 0)N = vec()-N;
-		return BVV(true, B, N);
+		return BVV(true, interpoint, N);
 	}
 	static vec trilineinfinate(Triangle T, Line L) {
 		vec N = T.N();

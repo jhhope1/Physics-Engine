@@ -96,7 +96,7 @@ public:
 		delete[] indices;
 	}
 
-	static void render(vec pos, tensor R, Shader* ourShader, unsigned int VAO) {
+	static void render(vec pos, tensor R, Shader* ourShader, unsigned int VAO, int vertexnum) {
 
 		// get matrix's uniform location and set matrix
 		//ourShader->use();
@@ -134,7 +134,7 @@ public:
 
 		glBindVertexArray(VAO);
 
-		ourModel(pos, R, ourShader);
+		ourModel(pos, R, ourShader,vertexnum);
 
 		glBindVertexArray(0);
 	}
@@ -206,7 +206,7 @@ public:
 		camera.ProcessMouseScroll(yoffset);
 	}
 
-	static void ourModel(vec pos, tensor R, Shader* ourShader) {
+	static void ourModel(vec pos, tensor R, Shader* ourShader, int vertexnum) {
 		glm::mat4 model = glm::mat4(1.f);
 
 		model = glm::translate(model, glm::vec3(pos.V[0], pos.V[1], pos.V[2]));
@@ -222,7 +222,7 @@ public:
 		unsigned int modelLoc = glGetUniformLocation(ourShader->ID, "model");
 
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, (void*)(0));
+		glDrawElements(GL_TRIANGLES, vertexnum, GL_UNSIGNED_INT, (void*)(0));
 	}
 	static void pushcube(float* vertices, unsigned int* indices, unsigned int vs, unsigned int is, string S) {
 		allindices.clear();
