@@ -2,6 +2,7 @@
 
 vector<double> f(vector<Object*> OB) {//천장에 꼭대기점이 붙어있음
 	vector <double> f;
+	//구속조건 없음
 	//return f;
 	//팽이 구속조건
 	for (int i = 0; i < OB.size(); i++) {
@@ -193,6 +194,7 @@ VectorXd Lagrangian::qddot_FT(vector<Object*> OB, vector <VV> FT) {//qi 순서: OB
 
 	VectorXd qdot = VectorXd(OB.size()*6);
 	QDOT(&qdot, OB);
+
 
 	VectorXd lambda = -(B * A).inverse()* (B * dLdqPm);
 	//cout << "\n\n";

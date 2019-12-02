@@ -16,6 +16,17 @@ public:
 	unsigned int indices[36];
 };
 
+class sphere {
+public:
+	static unsigned int vertexnum;
+	static unsigned int indnum;
+	static unsigned int stride;
+	sphere();
+	sphere(double radius);
+	float vertices[36 * 6];
+	unsigned int indices[36];
+};
+
 class top {
 public:
 	static unsigned int vertexnum;

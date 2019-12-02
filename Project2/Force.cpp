@@ -109,6 +109,8 @@ void Force::update_Object_Force(Object* ob, vec workingpoint, vec force, double 
 }
 void Force::update_Object_Force(vector<Object*> OB, double dt) {
 	update_Object(OB, Lagrangian::qddot_FT(OB, FT_tot), dt);
+	//cout << "qddot_FT = " << Lagrangian::qddot_FT(OB, FT_tot)<<"\n";
+	//cout << "dt = " << dt<<"\n";
 }
 
 void Force::update_Object_without_Force(Object* ob, double dt) {
@@ -358,7 +360,6 @@ void Force::Gravity(int ind, Object* ob, double dt) {
 	vec g = vec(0, 0, -gravity_acceleration);
 	FT_tot[ind].Force += ob->m * g;
 	FT_tot[ind].Torque += vec();
-	//update_Object_Force(ob, ob->pos_f, ob->m * g, dt);
 	return;
 }
 
@@ -366,6 +367,7 @@ void Force::Gravity_Object(vector<Object*> OB, double dt) {
 	for (int i = 0; i < OB.size(); i++) {
 		for (int j = i + 1; j < OB.size(); j++) {
 			vec r = OB[j]->pos_f - OB[i]->pos_f;
+			if (r.normsquare() < 0.0001)continue;
 			vec F = gravitational_constant*r/r.norm()/r.dot(r);
 			update_Object_Force(OB[i], OB[i]->pos_f, F, dt);
 			update_Object_Force(OB[j], OB[j]->pos_f, -1*F, dt);
@@ -401,11 +403,14 @@ void Force::Collide_Force(vector<Object*> OB, double dt) {
 }
 
 void Force::GenIndexPointForce_f(vector <Object*> OB, double dt){
-	FT_tot.resize(OB.size(),VV());
+	FT_tot.resize(OB.size());
 
+	for (int i = 0; i < OB.size(); i++) {
+		FT_tot[i] = VV();
+	}
 	//-z direction gravity
 	for (int i = 0; i < OB.size(); i++) {
-		//Gravity(i, OB[i], dt);
+		Gravity(i, OB[i], dt);
 	}
 
 	//gravity along objects

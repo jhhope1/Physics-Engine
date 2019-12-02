@@ -89,6 +89,28 @@ line::line() {
 	}
 }
 
+unsigned int sphere::vertexnum = 18 * 100;
+unsigned int sphere::indnum = 3 * 100;
+unsigned int sphere::stride = 6;
+
+sphere::sphere() {
+	int n_y = 10;
+	int n_x = 10;
+	for (int i = 0; i < n_y; i++) {
+		double y = sin(i / n_y * PI);
+		double CO = cos(i / n_x * PI);
+		for (int j = 0; j < n_x; j++) {
+			double x = CO * sin(j / n_x * 2 * PI);
+			double z = CO * cos(j / n_x * 2 * PI);
+			//나중에 구현..
+			
+		}
+	}
+	
+}
+
+
+
 unsigned int top::vertexnum = 18 * 100;
 unsigned int top::indnum = 3*100;
 unsigned int top::stride = 6;
