@@ -2,7 +2,7 @@
 const double Force::gravity_acceleration = 10.;
 const double Force::gravitational_constant = 10.;
 const double Force::spring_constant = 1.;
-const double Force::REPULSIVE_COEFFICIENT = 0.0;
+const double Force::REPULSIVE_COEFFICIENT = 1.0;
 vector<VV> Force::FT_tot = vector<VV>(0);
 
 
@@ -78,8 +78,6 @@ void Force::avoid_overlap_wall(vector <Object*> OB, vec point, vec plainnormal) 
 }
 
 void Force::update_Object(vector<Object*> OB, VectorXd qddot, double dt) {
-	//cout << qddot << "\n";
-	//이거 무조건 다시 식 뒤져봐야됨->해결됨-> 생각보다 라그랑지안이 잘 안터짐
 	for (int i = 0; i < OB.size(); i++) {
 		for (int j = 0; j < 3; j++) {
 			OB[i]->v_f.V[j] += qddot(6 * i + j)*dt;
@@ -97,18 +95,25 @@ void Force::update_Object_Force(Object* ob, vec workingpoint, vec force, double 
 	//use Lagrangian
 	vector<Object*> OB;
 	OB.push_back(ob);
-	vector<VV> FT;
+	//vector<VV> FT;
 	vec T_b = ob->rotmat_bf.transpose()*((workingpoint - ob->pos_f) * force);
-	FT.push_back(VV(force, T_b));
+	ob->Force_f += force;
+	ob->Torque_b += T_b;
+	return;
+
+
+
+	///////////
+	//FT.push_back(VV(force, T_b));
 	//cout << T_b << "\n";
 	//VectorXd qddot = Lagrangian::qddot_without_FT(OB);
-	VectorXd qddot = Lagrangian::qddot_FT(OB,FT);
+	//VectorXd qddot = Lagrangian::qddot_FT(OB,FT);
 
 	//cout << qddot << "\n";
-	update_Object(OB, qddot, dt);
+	//update_Object(OB, qddot, dt);
 }
 void Force::update_Object_Force(vector<Object*> OB, double dt) {
-	update_Object(OB, Lagrangian::qddot_FT(OB, FT_tot), dt);
+	update_Object(OB, Lagrangian::qddot_FT(OB), dt);
 	//cout << "qddot_FT = " << Lagrangian::qddot_FT(OB, FT_tot)<<"\n";
 	//cout << "dt = " << dt<<"\n";
 }
@@ -358,8 +363,8 @@ int Force::Collision_Line_Line(Object* A, Object* B, double dt) {
 
 void Force::Gravity(int ind, Object* ob, double dt) {
 	vec g = vec(0, 0, -gravity_acceleration);
-	FT_tot[ind].Force += ob->m * g;
-	FT_tot[ind].Torque += vec();
+	ob->Force_f += ob->m * g;
+	ob->Torque_b += vec();
 	return;
 }
 
@@ -403,14 +408,14 @@ void Force::Collide_Force(vector<Object*> OB, double dt) {
 }
 
 void Force::GenIndexPointForce_f(vector <Object*> OB, double dt){
-	FT_tot.resize(OB.size());
 
 	for (int i = 0; i < OB.size(); i++) {
-		FT_tot[i] = VV();
+		OB[i]->Force_f = vec();
+		OB[i]->Torque_b = vec();
 	}
 	//-z direction gravity
 	for (int i = 0; i < OB.size(); i++) {
-		Gravity(i, OB[i], dt);
+		//Gravity(i, OB[i], dt);
 	}
 
 	//gravity along objects
@@ -423,11 +428,11 @@ void Force::GenIndexPointForce_f(vector <Object*> OB, double dt){
 	//Collide_Force(OB, dt);
 
 	//plain wall
-	//wall(OB, vec(0, 0, 0), vec(0, 0, 1));
+	wall(OB, vec(0, 0, 0), vec(0, 0, 1));
 
 	//avoid_overlap
 	//avoid_overlap(OB,dt);
-	//avoid_overlap_wall(OB, vec(0, 0, 0), vec(0, 0, 1));
+	avoid_overlap_wall(OB, vec(0, 0, 0), vec(0, 0, 1));
 
 	update_Object_Force(OB, dt);
 	update_Object_without_Force(OB, dt);

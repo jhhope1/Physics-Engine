@@ -7,7 +7,7 @@ class Object:public Rigidbody{
     public:
     vec pos_f;
 	vec cubesize;
-	top C;
+	cube C;
     vec w_b;
     vec v_f;
     tensor rotmat_bf;
@@ -15,6 +15,9 @@ class Object:public Rigidbody{
     Object(Rigidbody RB, vec posf, vec wb, vec vf, tensor rotmatif);
     Object(Rigidbody RB);//initial condition of position,w,v,rotmat are 0,0,0,1
 	Object(Rigidbody RB, vec posf, vec wb, vec vf, tensor rotmatif, vec cubesize);
+
+	vec Torque_b;
+	vec Force_f;
 
     //ops
     void operator =(Object A);
@@ -28,6 +31,7 @@ class Object:public Rigidbody{
 	double KineticE();
 	vec AngMom_f();
 	vec pos_b_pos_f(vec V);//position in b -> position in f
+	vec pos_f_pos_b(vec V);
 	vec pos_f_vel_f(vec V);//pos in b -> vel in f
 	void ObjectPoints(vector <vec>* Pt);
 

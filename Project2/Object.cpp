@@ -6,7 +6,7 @@ Object::Object(Rigidbody RB, vec posf, vec wb, vec vf, tensor rotmatif, vec cube
 	Rigidbody& thisRB = *this;
 	thisRB = RB;
 	this->cubesize = cubesize;
-	C = top();
+	C = cube(cubesize);
 	pos_f = posf;
 	w_b = wb;
 	v_f = vf;
@@ -28,6 +28,8 @@ void Object::operator =(Object A){
     v_f = A.v_f;
 	cubesize = A.cubesize;
     rotmat_bf = A.rotmat_bf;
+	Force_f = A.Force_f;
+	Torque_b = A.Torque_b;
     Rigidbody &B = *this;
     Rigidbody &C = A;
     B = C;
@@ -83,6 +85,11 @@ vec Object::AngMom_f() {
 vec Object::pos_b_pos_f(vec V) {
 	return pos_f + rotmat_bf * V;
 }
+
+vec Object::pos_f_pos_b(vec V) {
+	return rotmat_bf.transpose()*(V-pos_f);
+}
+
 vec Object::pos_f_vel_f(vec V) {
 	return v_f + w_f() * (V - pos_f);
 }

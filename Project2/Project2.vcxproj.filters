@@ -104,6 +104,9 @@
     <ClInclude Include="Lagrangian.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="ObjectGraph.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shader.fs">

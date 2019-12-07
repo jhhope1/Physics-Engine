@@ -4,6 +4,14 @@ vector<double> f(vector<Object*> OB) {//천장에 꼭대기점이 붙어있음
 	vector <double> f;
 	//구속조건 없음
 	//return f;
+	//chain
+	for (int i = 0; i < OB.size() - 1; i++) {
+		vec A = OB[i]->pos_b_pos_f(vec(0, 0, OB[i]->cubesize.V[2] / 2)) - OB[i + 1]->pos_b_pos_f(vec(0, 0, -OB[i + 1]->cubesize.V[2] / 2));
+		for (int j = 0; j < 3; j++) {
+			f.push_back(A.V[j]);
+		}
+	}
+	return f;
 	//팽이 구속조건
 	for (int i = 0; i < OB.size(); i++) {
 		vec A = OB[i]->pos_b_pos_f(vec(0, 0, -1));
@@ -78,15 +86,15 @@ MatrixXd dfdq(vector<Object*> OBtemp, int lambdan, vector<double> f_origin) {
 	return B;
 }
 
-void DLDQ(VectorXd* dLdq, vector<VV> FT){
+void DLDQ(VectorXd* dLdq, vector<Object*> OB){
 	int dLdqn = 0;
-	for (VV ft : FT) {
+	for (Object *ob : OB) {
 		for (int i = 0; i < 3; i++) {
-			(*dLdq)(dLdqn) = ft.Force.V[i];
+			(*dLdq)(dLdqn) = ob->Force_f.V[i];
 			dLdqn++;
 		}
 		for (int i = 0; i < 3; i++) {
-			(*dLdq)(dLdqn) = ft.Torque.V[i];
+			(*dLdq)(dLdqn) = ob->Torque_b.V[i];
 			dLdqn++;
 		}
 	}
@@ -157,18 +165,14 @@ void MAKEC(VectorXd *C, MatrixXd B,vector<Object*> OB,vector<Object*> OBtemp, in
 	*C = TEMP * qdot;//size = lambdan
 }
 
-VectorXd Lagrangian::qddot_FT(vector<Object*> OB, vector <VV> FT) {//qi 순서: OB[i], x1, x2, x3, x1_b회전각, x2_b회전각, x3_b회전각 // 행렬 이름은 보고서 변수정의를 따릅니다.
-	if (OB.size() != FT.size()) {
-		cout << "Warning in Lagrangian::qddot_FT OB.size()!=FT.size()\n";
-	}
+VectorXd Lagrangian::qddot_FT(vector<Object*> OB) {//qi 순서: OB[i], x1, x2, x3, x1_b회전각, x2_b회전각, x3_b회전각 // 행렬 이름은 보고서 변수정의를 따릅니다.
 	//변수 개수 6N개, lambda 개수 lambdan개.
 	//강제 운동은 일단은 무시한다. 힘 작용하는 것만
-
 	VectorXd dLdq(6 * OB.size());
-	DLDQ(&dLdq, FT);
+	DLDQ(&dLdq, OB);
 
 	VectorXd dLdqPm(6 * OB.size());
-	DLDQPM(&dLdqPm, &dLdq, OB);
+	DLDQPM(&dLdqPm, &dLdq,OB);
 
 	int lambdan = f(OB).size();
 
@@ -197,6 +201,9 @@ VectorXd Lagrangian::qddot_FT(vector<Object*> OB, vector <VV> FT) {//qi 순서: OB
 
 
 	VectorXd lambda = -(B * A).inverse()* (B * dLdqPm);
+
+	//cout << lambda.norm() << "\n";
+	if(lambda.norm()>1)cout << lambda<<"\n";
 	//cout << "\n\n";
 	//cout << "dLdq = \n" << dLdq << "\n";
 	//cout << "dLdqPm = \n" << dLdqPm << "\n";

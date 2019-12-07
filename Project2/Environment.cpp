@@ -32,6 +32,9 @@ void Environment::push_back(vector<Object*> OBJECT) {
 
 
 void Environment::step(){
+	//cout <<"Kinetic E = "<< KineticE()<<"\n";
+	//cout << "Angular momentum = "<<AngMom()<<"\n";
+	//cout << "Momentum = "<<momentum()<<"\n\n";
 	Force::GenIndexPointForce_f(OB, Environment::dt);
 	for (int i = 0; i < OB.size(); i++) {
 		OB[i]->Object_update_pos_rotmat(dt);

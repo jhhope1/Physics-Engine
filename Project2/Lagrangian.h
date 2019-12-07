@@ -3,7 +3,7 @@
 #include "Object.h"
 #include <Eigen/Dense>
 using namespace Eigen;
-const double LAGRANGIAN_DX = 1e-5;
+const double LAGRANGIAN_DX = 1e-6;
 
 class VV{
 public:
@@ -21,7 +21,7 @@ public:
 
 class Lagrangian {
 public:
-	static VectorXd qddot_FT(vector<Object*> OB, vector <VV> FT);
+	static VectorXd qddot_FT(vector<Object*> OB);
 	static VectorXd qddot_without_FT(vector<Object*> OB);
 };
 
