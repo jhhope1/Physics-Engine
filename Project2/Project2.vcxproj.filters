@@ -60,6 +60,12 @@
     <ClCompile Include="Geometry_test.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Eigen_test.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Lagrangian.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="shader.h">
@@ -93,6 +99,12 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="Geometry.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Lagrangian.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ObjectGraph.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

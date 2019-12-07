@@ -4,6 +4,11 @@ float Visualize::lastX = SCR_W / 2.0f;
 float Visualize::lastY = SCR_H / 2.0f;
 bool Visualize::firstMouse = true;
 
+int Visualize::axisnum = 100;
+double Visualize::axis_unit_x = 1;
+double Visualize::axis_unit_y = 1;
+double Visualize::axis_thick = 1;
+
 float Visualize::deltaTime = 0.f;
 float Visualize::lastFrame = 0.f;
 

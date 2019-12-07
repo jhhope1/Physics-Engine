@@ -51,6 +51,7 @@ class tensor{
     tensor();
     tensor(vec A, vec B, vec C);
     tensor(double ph, double th, double ps);//coordinate transformation rot frame -> body frame.
+	tensor(int n, double th);//n번째 축으로 th 만큼 회전한(') 좌표계 변환 tensor_new_origin
     tensor(string S, double ph, double th, double ps);
     tensor(double A[][3]);
 	tensor(double m00, double m01, double m02, double m10, double m11, double m12, double m20, double m21, double m22);

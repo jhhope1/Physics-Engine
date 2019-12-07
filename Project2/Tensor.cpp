@@ -4,7 +4,7 @@ using namespace std;
 
 //generator
 vec::vec(){
-    for(int i=0 ; i<3 ; i++)V[i]=0;
+    for(int i=0 ; i<3 ; i++)this->V[i]=0.;
 }
 vec::vec(double A[3]){
     for(int i=0 ; i<3 ; i++){
@@ -150,27 +150,53 @@ tensor::tensor(double A[][3]){
         }
     }
 }
-tensor::tensor(double ph, double th, double ps){//coordinate transformation rot frame -> body frame.
-    double A[3][3]={0},B[3][3]={0},C[3][3]={0};
-    A[0][0] = cos(ph);
-    A[0][1] = sin(ph);
-    A[1][0] = -sin(ph);
-    A[1][1] = cos(ph);
-    A[2][2] = 1;
+tensor::tensor(double ph, double th, double ps) {//coordinate transformation rot frame -> body frame.
+	double A[3][3] = { 0 }, B[3][3] = { 0 }, C[3][3] = { 0 };
+	A[0][0] = cos(ph);
+	A[0][1] = sin(ph);
+	A[1][0] = -sin(ph);
+	A[1][1] = cos(ph);
+	A[2][2] = 1;
 
-    B[0][0] = 1;
-    B[1][1] = cos(th);
-    B[1][2] = sin(th);
-    B[2][1] = -sin(th);
-    B[2][2] = cos(th);
+	B[0][0] = 1;
+	B[1][1] = cos(th);
+	B[1][2] = sin(th);
+	B[2][1] = -sin(th);
+	B[2][2] = cos(th);
 
-    C[0][0] = cos(ps);
-    C[0][1] = sin(ps);
-    C[1][0] = -sin(ps);
-    C[1][1] = cos(ps);
-    C[2][2] = 1;
-    tensor D = tensor(C)*tensor(B)*tensor(A);
-    *this = D.transpose();
+	C[0][0] = cos(ps);
+	C[0][1] = sin(ps);
+	C[1][0] = -sin(ps);
+	C[1][1] = cos(ps);
+	C[2][2] = 1;
+	tensor D = tensor(C) * tensor(B) * tensor(A);
+	*this = D.transpose();
+}
+tensor::tensor(int n, double th) {//coordinate transformation (')body -> body
+	//1베보다 0베가 나으면 나중에 수정.-> 0베로 수정됨
+	double A[3][3] = { 0 };
+	if (n == 0) {
+		A[0][0] = 1;
+		A[1][1] = cos(th);
+		A[1][2] = -sin(th);
+		A[2][2] = cos(th);
+		A[2][1] = sin(th);
+	}
+	if (n == 1) {
+		A[1][1] = 1;
+		A[0][0] = cos(th);
+		A[0][2] = sin(th);
+		A[2][2] = cos(th);
+		A[2][0] = -sin(th);
+	}
+	if (n == 2) {
+		A[2][2] = 1;
+		A[0][0] = cos(th);
+		A[0][1] = -sin(th);
+		A[1][1] = cos(th);
+		A[1][0] = sin(th);
+	}
+	*this = tensor(A);
 }
 tensor::tensor(string S, double ph, double th, double ps){
     tensor A = tensor(ph,th,ps);
@@ -357,7 +383,7 @@ void tensor::operator +=(tensor T){
     *this = *this+T;
 }
 void tensor::operator *=(tensor T){
-    *this = *this*T;
+    *this = (*this)*T;
 }
 void tensor::operator -=(tensor T){
     *this = *this-T;

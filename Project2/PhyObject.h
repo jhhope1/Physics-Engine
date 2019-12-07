@@ -12,7 +12,41 @@ public:
 	static unsigned int stride;
 	cube();
 	cube(vec resize);
-	float vertices[36*6];
+	float vertices[36 * 6];
 	unsigned int indices[36];
+};
+
+class sphere {
+public:
+	static unsigned int vertexnum;
+	static unsigned int indnum;
+	static unsigned int stride;
+	sphere();
+	sphere(double radius);
+	float vertices[36 * 6];
+	unsigned int indices[36];
+};
+
+class top {
+public:
+	static unsigned int vertexnum;
+	static unsigned int indnum;
+	static unsigned int stride;
+	top();
+	top(vec resize);
+	float vertices[18 * 100];
+	unsigned int indices[3 * 100];
+};
+
+class line {
+public:
+	static unsigned int vertexnum;
+	static unsigned int indnum;
+	static unsigned int stride;
+	line();
+	line(vec s, vec e);
+	float vertices[2*6];
+	unsigned int indices[2];
+
 };
 #endif

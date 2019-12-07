@@ -5,10 +5,9 @@ using namespace std;
 class Rigidbody{
     public:
     double m;
-    tensor Inertia_i;//tensor in initial cartesian coordinate
     vec Ib;
     tensor Inertia_b;
-    tensor rotmat_bi;/*body -> initial cartetian coordinate
+	/*body -> initial cartetian coordinate
     Inertia 
     = R.inv() Inertia0 R 
     = I in initial coordinate 
@@ -16,7 +15,7 @@ class Rigidbody{
     
     //generator
     Rigidbody();
-    Rigidbody(double m0, vec I, tensor R);
+    Rigidbody(double m0, vec I);
 
     //operators
     void operator= (Rigidbody A);
